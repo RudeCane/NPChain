@@ -1,0 +1,359 @@
+# ═══════════════════════════════════════════════════════════════════
+#  NPChain Testnet — Docker Compose
+#
+#  Deploys a complete testnet with:
+#    - 1 Boot node (generates genesis, first to mine)
+#    - 3 Seed nodes (public discovery endpoints)
+#    - 1 Miner node (dedicated mining)
+#    - 1 RPC node (API endpoint for wallets/dApps)
+#    - 1 Faucet server (free test coins)
+#    - 1 Block explorer (web UI)
+#    - Prometheus + Grafana monitoring
+#
+#  Usage:
+#    cd deploy/testnet
+#    docker compose up -d
+#    docker compose logs -f boot_node
+# ═══════════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+networks:
+  testnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  boot_data:
+  seed1_data:
+  seed2_data:
+  seed3_data:
+  miner_data:
+  rpc_data:
+  genesis_data:       # Shared genesis block
+  prometheus_data:
+  grafana_data:
+
+services:
+
+  # ═══════════════════════════════════════════════════════════════
+  #  GENESIS INITIALIZER
+  #  Runs once to create the genesis block, then exits.
+  #  All other nodes wait for this to complete.
+  # ═══════════════════════════════════════════════════════════════
+  genesis_init:
+    build:
+      context: ../..
+      dockerfile: deploy/testnet/Dockerfile.testnet
+      target: genesis
+    container_name: npchain_genesis_init
+    volumes:
+      - genesis_data:/genesis
+    environment:
+      - NETWORK=testnet
+      - GENESIS_MESSAGE=NPChain Testnet Launch — Proof-of-NP-Witness
+    command: >
+      /usr/local/bin/npchain_genesis
+        --testnet
+        --output /genesis/genesis.bin
+        --message "NPChain Testnet Launch — Proof-of-NP-Witness"
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.2
+
+  # ═══════════════════════════════════════════════════════════════
+  #  BOOT NODE — First node, mines from genesis
+  # ═══════════════════════════════════════════════════════════════
+  boot_node:
+    build:
+      context: ../..
+      dockerfile: deploy/testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_boot
+    hostname: boot-node
+    restart: unless-stopped
+    depends_on:
+      genesis_init:
+        condition: service_completed_successfully
+    ports:
+      - "19333:19333"   # P2P
+      - "18332:18332"   # RPC
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.10
+    volumes:
+      - boot_data:/data/npchain/testnet
+      - genesis_data:/genesis:ro
+      - ./testnet.conf:/etc/npchain/testnet.conf:ro
+    environment:
+      - NPCHAIN_NETWORK=testnet
+      - NPCHAIN_CONFIG=/etc/npchain/testnet.conf
+      - NPCHAIN_GENESIS=/genesis/genesis.bin
+      - NPCHAIN_MINING=true
+      - NPCHAIN_RPC=true
+      - NPCHAIN_RPC_KEY=testnet-boot-key-changeme
+      - NPCHAIN_LISTEN_PORT=19333
+      - NPCHAIN_DATA_DIR=/data/npchain/testnet
+      - NPCHAIN_SEED_NODES=
+      - NPCHAIN_LOG_LEVEL=info
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18332/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ═══════════════════════════════════════════════════════════════
+  #  SEED NODES — 3 public discovery nodes
+  # ═══════════════════════════════════════════════════════════════
+  seed1:
+    build:
+      context: ../..
+      dockerfile: deploy/testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_seed1
+    hostname: seed1
+    restart: unless-stopped
+    depends_on:
+      boot_node:
+        condition: service_healthy
+    ports:
+      - "19334:19333"
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.11
+    volumes:
+      - seed1_data:/data/npchain/testnet
+      - genesis_data:/genesis:ro
+      - ./testnet.conf:/etc/npchain/testnet.conf:ro
+    environment:
+      - NPCHAIN_NETWORK=testnet
+      - NPCHAIN_CONFIG=/etc/npchain/testnet.conf
+      - NPCHAIN_GENESIS=/genesis/genesis.bin
+      - NPCHAIN_MINING=false
+      - NPCHAIN_DATA_DIR=/data/npchain/testnet
+      - NPCHAIN_SEED_NODES=172.28.0.10:19333
+      - NPCHAIN_LOG_LEVEL=info
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  seed2:
+    build:
+      context: ../..
+      dockerfile: deploy/testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_seed2
+    hostname: seed2
+    restart: unless-stopped
+    depends_on:
+      boot_node:
+        condition: service_healthy
+    ports:
+      - "19335:19333"
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.12
+    volumes:
+      - seed2_data:/data/npchain/testnet
+      - genesis_data:/genesis:ro
+      - ./testnet.conf:/etc/npchain/testnet.conf:ro
+    environment:
+      - NPCHAIN_NETWORK=testnet
+      - NPCHAIN_CONFIG=/etc/npchain/testnet.conf
+      - NPCHAIN_GENESIS=/genesis/genesis.bin
+      - NPCHAIN_MINING=false
+      - NPCHAIN_DATA_DIR=/data/npchain/testnet
+      - NPCHAIN_SEED_NODES=172.28.0.10:19333,172.28.0.11:19333
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  seed3:
+    build:
+      context: ../..
+      dockerfile: deploy/testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_seed3
+    hostname: seed3
+    restart: unless-stopped
+    depends_on:
+      boot_node:
+        condition: service_healthy
+    ports:
+      - "19336:19333"
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.13
+    volumes:
+      - seed3_data:/data/npchain/testnet
+      - genesis_data:/genesis:ro
+      - ./testnet.conf:/etc/npchain/testnet.conf:ro
+    environment:
+      - NPCHAIN_NETWORK=testnet
+      - NPCHAIN_CONFIG=/etc/npchain/testnet.conf
+      - NPCHAIN_GENESIS=/genesis/genesis.bin
+      - NPCHAIN_MINING=false
+      - NPCHAIN_DATA_DIR=/data/npchain/testnet
+      - NPCHAIN_SEED_NODES=172.28.0.10:19333,172.28.0.11:19333,172.28.0.12:19333
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  # ═══════════════════════════════════════════════════════════════
+  #  DEDICATED MINER NODE
+  # ═══════════════════════════════════════════════════════════════
+  miner:
+    build:
+      context: ../..
+      dockerfile: deploy/testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_miner
+    hostname: miner
+    restart: unless-stopped
+    depends_on:
+      boot_node:
+        condition: service_healthy
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.20
+    volumes:
+      - miner_data:/data/npchain/testnet
+      - genesis_data:/genesis:ro
+      - ./testnet.conf:/etc/npchain/testnet.conf:ro
+    environment:
+      - NPCHAIN_NETWORK=testnet
+      - NPCHAIN_CONFIG=/etc/npchain/testnet.conf
+      - NPCHAIN_GENESIS=/genesis/genesis.bin
+      - NPCHAIN_MINING=true
+      - NPCHAIN_MINING_THREADS=0
+      - NPCHAIN_DATA_DIR=/data/npchain/testnet
+      - NPCHAIN_SEED_NODES=172.28.0.10:19333,172.28.0.11:19333,172.28.0.12:19333
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4G
+
+  # ═══════════════════════════════════════════════════════════════
+  #  RPC NODE — Public API endpoint
+  # ═══════════════════════════════════════════════════════════════
+  rpc_node:
+    build:
+      context: ../..
+      dockerfile: deploy/testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_rpc
+    hostname: rpc
+    restart: unless-stopped
+    depends_on:
+      boot_node:
+        condition: service_healthy
+    ports:
+      - "18333:18332"  # Public RPC
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.30
+    volumes:
+      - rpc_data:/data/npchain/testnet
+      - genesis_data:/genesis:ro
+      - ./testnet.conf:/etc/npchain/testnet.conf:ro
+    environment:
+      - NPCHAIN_NETWORK=testnet
+      - NPCHAIN_CONFIG=/etc/npchain/testnet.conf
+      - NPCHAIN_GENESIS=/genesis/genesis.bin
+      - NPCHAIN_MINING=false
+      - NPCHAIN_RPC=true
+      - NPCHAIN_RPC_KEY=testnet-rpc-public-key
+      - NPCHAIN_DATA_DIR=/data/npchain/testnet
+      - NPCHAIN_SEED_NODES=172.28.0.10:19333,172.28.0.11:19333
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  # ═══════════════════════════════════════════════════════════════
+  #  FAUCET — Dispenses free testnet coins
+  # ═══════════════════════════════════════════════════════════════
+  faucet:
+    build:
+      context: ../..
+      dockerfile: deploy/testnet/Dockerfile.faucet
+    container_name: npchain_faucet
+    hostname: faucet
+    restart: unless-stopped
+    depends_on:
+      rpc_node:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.40
+    environment:
+      - RPC_URL=http://172.28.0.30:18332
+      - RPC_KEY=testnet-rpc-public-key
+      - DRIP_AMOUNT=10000
+      - COOLDOWN_SEC=3600
+      - LISTEN_PORT=8080
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ═══════════════════════════════════════════════════════════════
+  #  MONITORING
+  # ═══════════════════════════════════════════════════════════════
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: npchain_testnet_prometheus
+    restart: unless-stopped
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.50
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: npchain_testnet_grafana
+    restart: unless-stopped
+    networks:
+      testnet:
+        ipv4_address: 172.28.0.51
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=npchain-testnet
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana-datasources:/etc/grafana/provisioning/datasources:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M

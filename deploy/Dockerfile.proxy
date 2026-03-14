@@ -1,0 +1,36 @@
+# ═══════════════════════════════════════════════════════════════════
+#  NPChain Proxy Shield — Multi-stage Build
+#  Minimal attack surface: distroless runtime, no shell, no tools
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Stage 1: Build ──
+FROM ubuntu:24.04 AS builder
+
+RUN apt-get update && apt-get install -y \
+    build-essential cmake git \
+    libssl-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY . .
+
+RUN mkdir -p build && cd build && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_PROXIES=ON \
+        -DCMAKE_CXX_FLAGS="-O2 -fstack-protector-strong -D_FORTIFY_SOURCE=2 -fPIE" && \
+    make -j$(nproc) npchain_proxy
+
+# ── Stage 2: Runtime (minimal) ──
+FROM gcr.io/distroless/cc-debian12:latest
+
+ARG PROXY_LAYER=edge_sentinel
+ENV PROXY_LAYER=${PROXY_LAYER}
+
+# Copy only the binary — no shell, no package manager, no attack surface
+COPY --from=builder /build/build/npchain_proxy /usr/local/bin/npchain_proxy
+
+# Non-root user
+USER nonroot:nonroot
+
+ENTRYPOINT ["/usr/local/bin/npchain_proxy"]

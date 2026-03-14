@@ -1,0 +1,23 @@
+# NPChain Core Node — Testnet
+# Runs the actual testnet node behind the 8-proxy shield.
+# NO PUBLIC PORTS — only reachable by Proxy 8 (Final Gateway).
+
+FROM ubuntu:24.04 AS builder
+
+RUN apt-get update && apt-get install -y \
+    g++ make \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY src/ src/
+COPY include/ include/
+
+RUN g++ -std=c++20 -O2 -pthread -I include -I src \
+    src/testnet_node.cpp src/crypto/hash.cpp src/crypto/dilithium.cpp \
+    -o npchain_testnet
+
+FROM ubuntu:24.04
+COPY --from=builder /build/npchain_testnet /usr/local/bin/npchain_testnet
+EXPOSE 19333 18333
+
+ENTRYPOINT ["/usr/local/bin/npchain_testnet"]

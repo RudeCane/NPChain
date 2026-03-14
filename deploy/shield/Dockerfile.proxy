@@ -1,0 +1,14 @@
+# NPChain Proxy Shield — Layer Container
+# Lightweight Alpine-based TCP proxy with layer-specific security filters
+
+FROM alpine:3.19 AS builder
+RUN apk add --no-cache g++ musl-dev linux-headers
+WORKDIR /build
+COPY proxy.cpp .
+RUN g++ -std=c++20 -O2 -pthread -static -o npchain_proxy proxy.cpp
+
+FROM alpine:3.19
+RUN adduser -D -u 1000 npchain
+COPY --from=builder /build/npchain_proxy /usr/local/bin/npchain_proxy
+USER npchain
+ENTRYPOINT ["/usr/local/bin/npchain_proxy"]

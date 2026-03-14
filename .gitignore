@@ -1,0 +1,36 @@
+# Compiled binaries
+*.exe
+*.o
+*.a
+*.so
+*.dylib
+npchain_testnet
+npchain_wallet
+npchain_validator
+test_ponw_loop
+
+# Build directories
+build/
+cmake-build-*/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Wallet keys (NEVER commit)
+*.npwallet
+*.key
+miner.key
+wallet-web-export.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Chain data
+chain.dat
+blocks/

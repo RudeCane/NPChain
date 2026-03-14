@@ -1,0 +1,81 @@
+# ═══════════════════════════════════════════════════════════════
+#  NPChain Testnet — Multi-Stage Dockerfile
+#
+#  Targets:
+#    genesis  — Generates the genesis block, then exits
+#    node     — Full consensus node (seed/validator)
+#    miner    — Mining node with solver pool
+# ═══════════════════════════════════════════════════════════════
+
+# ── Build Stage ──
+FROM ubuntu:24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    build-essential cmake git pkg-config \
+    libssl-dev libsodium-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY . .
+
+RUN mkdir -p build && cd build && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_FLAGS="-O2 -DNDEBUG" && \
+    make -j$(nproc) npchain_node npchain_miner npchain_wallet npchain_genesis
+
+# ── Genesis Generator (runs once, creates genesis.dat, then exits) ──
+FROM ubuntu:24.04 AS genesis
+
+RUN apt-get update && apt-get install -y libssl3 libsodium23 && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/build/npchain_genesis /usr/local/bin/
+COPY --from=builder /build/build/npchain_wallet  /usr/local/bin/
+
+VOLUME /genesis
+
+ENTRYPOINT ["npchain_genesis"]
+CMD ["--testnet", "--output", "/genesis/genesis.dat"]
+
+# ── Full Node ──
+FROM ubuntu:24.04 AS node
+
+RUN apt-get update && apt-get install -y \
+    libssl3 libsodium23 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/build/npchain_node   /usr/local/bin/
+COPY --from=builder /build/build/npchain_wallet /usr/local/bin/
+
+RUN useradd -m -s /bin/bash npchain
+USER npchain
+
+VOLUME /data/npchain-testnet
+EXPOSE 19333 18332
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 --start-period=15s \
+    CMD curl -sf http://localhost:18332/health || exit 1
+
+ENTRYPOINT ["npchain_node"]
+CMD ["--testnet", "--datadir", "/data/npchain-testnet"]
+
+# ── Miner ──
+FROM ubuntu:24.04 AS miner
+
+RUN apt-get update && apt-get install -y \
+    libssl3 libsodium23 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/build/npchain_miner  /usr/local/bin/
+COPY --from=builder /build/build/npchain_wallet /usr/local/bin/
+
+RUN useradd -m -s /bin/bash npchain
+USER npchain
+
+VOLUME /data/npchain-testnet
+EXPOSE 19333
+
+ENTRYPOINT ["npchain_miner"]
+CMD ["--testnet", "--datadir", "/data/npchain-testnet", "--threads", "4"]

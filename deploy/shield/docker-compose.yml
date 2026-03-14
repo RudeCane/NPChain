@@ -1,0 +1,281 @@
+# ═══════════════════════════════════════════════════════════════════
+#  NPChain 8-Proxy Shield — Testnet Deployment
+#
+#  Traffic flow:
+#    INTERNET:19333 → P1(Edge) → P2(Protocol) → P3(Rate) → P4(Identity)
+#    → P5(Content) → P6(Anomaly) → P7(Encryption) → P8(Gateway) → CORE NODE
+#
+#  Usage:
+#    docker-compose up -d --build
+#    docker-compose logs -f
+#    docker-compose down
+#
+#  Only port 19333 (P2P) and 18333 (RPC) are exposed publicly.
+#  The core node has NO public ports.
+# ═══════════════════════════════════════════════════════════════════
+
+networks:
+  # Each layer pair gets its own isolated network
+  public_edge:      # Internet → P1
+    driver: bridge
+  edge_proto:       # P1 → P2
+    driver: bridge
+    internal: true
+  proto_rate:       # P2 → P3
+    driver: bridge
+    internal: true
+  rate_ident:       # P3 → P4
+    driver: bridge
+    internal: true
+  ident_content:    # P4 → P5
+    driver: bridge
+    internal: true
+  content_anomaly:  # P5 → P6
+    driver: bridge
+    internal: true
+  anomaly_encrypt:  # P6 → P7
+    driver: bridge
+    internal: true
+  encrypt_gateway:  # P7 → P8
+    driver: bridge
+    internal: true
+  gateway_core:     # P8 → Core Node
+    driver: bridge
+    internal: true
+
+volumes:
+  chain_data:
+
+services:
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 1: EDGE SENTINEL
+  #  THE ONLY PUBLIC-FACING CONTAINER for P2P traffic
+  #  DDoS absorption, connection limiting, geo-filtering
+  # ═══════════════════════════════════════════════════════════════
+  proxy_1_edge:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: npchain_p1_edge
+    restart: unless-stopped
+    ports:
+      - "19333:19333"       # ← P2P: The ONLY public port
+    networks:
+      public_edge:
+      edge_proto:
+    environment:
+      - PROXY_LAYER=1
+      - LISTEN_PORT=19333
+      - NEXT_HOST=proxy_2_protocol
+      - NEXT_PORT=19401
+      - MAX_CONN_PER_IP=5
+      - MAX_GLOBAL_CONN=10000
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 2: PROTOCOL GATE
+  #  Validates wire protocol format, rejects malformed packets
+  # ═══════════════════════════════════════════════════════════════
+  proxy_2_protocol:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: npchain_p2_protocol
+    restart: unless-stopped
+    networks:
+      edge_proto:
+      proto_rate:
+    environment:
+      - PROXY_LAYER=2
+      - LISTEN_PORT=19401
+      - NEXT_HOST=proxy_3_rate
+      - NEXT_PORT=19402
+      - MAX_MESSAGE_SIZE=4194304
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 3: RATE GOVERNOR
+  #  Token-bucket rate limiting per IP and global
+  # ═══════════════════════════════════════════════════════════════
+  proxy_3_rate:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: npchain_p3_rate
+    restart: unless-stopped
+    networks:
+      proto_rate:
+      rate_ident:
+    environment:
+      - PROXY_LAYER=3
+      - LISTEN_PORT=19402
+      - NEXT_HOST=proxy_4_identity
+      - NEXT_PORT=19403
+      - MSG_PER_SEC_PER_IP=100
+      - BYTES_PER_SEC_PER_IP=524288
+      - GLOBAL_MSG_PER_SEC=50000
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 4: IDENTITY VERIFIER
+  #  Validates HELLO handshake structure, peer authentication
+  # ═══════════════════════════════════════════════════════════════
+  proxy_4_identity:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: npchain_p4_identity
+    restart: unless-stopped
+    networks:
+      rate_ident:
+      ident_content:
+    environment:
+      - PROXY_LAYER=4
+      - LISTEN_PORT=19403
+      - NEXT_HOST=proxy_5_content
+      - NEXT_PORT=19404
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 5: CONTENT INSPECTOR
+  #  Deep packet inspection — validates block/transaction structure
+  # ═══════════════════════════════════════════════════════════════
+  proxy_5_content:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: npchain_p5_content
+    restart: unless-stopped
+    networks:
+      ident_content:
+      content_anomaly:
+    environment:
+      - PROXY_LAYER=5
+      - LISTEN_PORT=19404
+      - NEXT_HOST=proxy_6_anomaly
+      - NEXT_PORT=19405
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 6: ANOMALY DETECTOR
+  #  Behavioral analysis — detects eclipse, sybil, flood attacks
+  # ═══════════════════════════════════════════════════════════════
+  proxy_6_anomaly:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: npchain_p6_anomaly
+    restart: unless-stopped
+    networks:
+      content_anomaly:
+      anomaly_encrypt:
+    environment:
+      - PROXY_LAYER=6
+      - LISTEN_PORT=19405
+      - NEXT_HOST=proxy_7_encrypt
+      - NEXT_PORT=19406
+      - ANOMALY_THRESHOLD=0.7
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 7: ENCRYPTION BRIDGE
+  #  Re-encrypts traffic with internal-only keys, strips metadata
+  # ═══════════════════════════════════════════════════════════════
+  proxy_7_encrypt:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: npchain_p7_encrypt
+    restart: unless-stopped
+    networks:
+      anomaly_encrypt:
+      encrypt_gateway:
+    environment:
+      - PROXY_LAYER=7
+      - LISTEN_PORT=19406
+      - NEXT_HOST=proxy_8_gateway
+      - NEXT_PORT=19407
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 8: FINAL GATEWAY
+  #  Circuit breaker, attestation verification, last line of defense
+  # ═══════════════════════════════════════════════════════════════
+  proxy_8_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: npchain_p8_gateway
+    restart: unless-stopped
+    networks:
+      encrypt_gateway:
+      gateway_core:
+    environment:
+      - PROXY_LAYER=8
+      - LISTEN_PORT=19407
+      - NEXT_HOST=core_node
+      - NEXT_PORT=19333
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ═══════════════════════════════════════════════════════════════
+  #  CORE NODE — The Protected Testnet Node
+  #  NO PUBLIC PORTS. Only Proxy 8 can reach it.
+  #  Runs mining + RPC + P2P listener
+  # ═══════════════════════════════════════════════════════════════
+  core_node:
+    build:
+      context: ../..
+      dockerfile: deploy/shield/Dockerfile.node
+    container_name: npchain_core
+    restart: unless-stopped
+    networks:
+      gateway_core:
+      public_edge:
+    ports:
+      - "18333:18333"       # RPC exposed for wallet/explorer access
+    environment:
+      - MINER_ADDRESS=${MINER_ADDRESS:-cert189e6b5cd23fe7fabb499b8a7ae781e8b77df5755}
+    volumes:
+      - chain_data:/data
+    command: ["--address", "${MINER_ADDRESS:-cert189e6b5cd23fe7fabb499b8a7ae781e8b77df5755}",
+              "--p2p-port", "19333", "--rpc-port", "18333"]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  # RPC is exposed directly on core_node:18333 for testnet simplicity

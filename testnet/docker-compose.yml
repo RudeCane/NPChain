@@ -1,0 +1,276 @@
+# ═══════════════════════════════════════════════════════════════
+#  NPChain Testnet — Complete Deployment
+#
+#  Stack: 3 seed nodes + 1 miner + faucet + explorer + monitoring
+#
+#  Ports:
+#    19333  — P2P seed node 1
+#    18332  — JSON-RPC
+#    8080   — Block explorer
+#    8081   — Faucet
+#    3000   — Grafana
+# ═══════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+networks:
+  testnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+
+volumes:
+  genesis_data:
+  seed1_data:
+  seed2_data:
+  seed3_data:
+  miner_data:
+  explorer_data:
+  prometheus_data:
+  grafana_data:
+
+services:
+
+  # ─── GENESIS: runs once, creates genesis block, then exits ───
+  genesis:
+    build:
+      context: ..
+      dockerfile: testnet/Dockerfile.testnet
+      target: genesis
+    container_name: npchain_genesis
+    volumes:
+      - genesis_data:/genesis
+    command: ["--testnet", "--output", "/genesis/genesis.dat"]
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.2
+
+  # ─── SEED NODE 1 (primary boot node + RPC) ───
+  seed1:
+    build:
+      context: ..
+      dockerfile: testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_seed1
+    hostname: seed1
+    restart: unless-stopped
+    depends_on:
+      genesis:
+        condition: service_completed_successfully
+    ports:
+      - "19333:19333"
+      - "18332:18332"
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.10
+    volumes:
+      - seed1_data:/data/npchain-testnet
+      - genesis_data:/genesis:ro
+    command: >
+      npchain_node
+        --testnet
+        --datadir /data/npchain-testnet
+        --genesis /genesis/genesis.dat
+        --port 19333
+        --rpc-port 18332
+        --rpc-bind 0.0.0.0
+        --seed
+        --peers seed2:19333,seed3:19333
+        --block-time 10
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+
+  # ─── SEED NODE 2 ───
+  seed2:
+    build:
+      context: ..
+      dockerfile: testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_seed2
+    hostname: seed2
+    restart: unless-stopped
+    depends_on:
+      genesis:
+        condition: service_completed_successfully
+    ports:
+      - "19334:19333"
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.11
+    volumes:
+      - seed2_data:/data/npchain-testnet
+      - genesis_data:/genesis:ro
+    command: >
+      npchain_node
+        --testnet
+        --datadir /data/npchain-testnet
+        --genesis /genesis/genesis.dat
+        --port 19333 --seed
+        --peers seed1:19333,seed3:19333
+        --block-time 10
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+
+  # ─── SEED NODE 3 ───
+  seed3:
+    build:
+      context: ..
+      dockerfile: testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_seed3
+    hostname: seed3
+    restart: unless-stopped
+    depends_on:
+      genesis:
+        condition: service_completed_successfully
+    ports:
+      - "19335:19333"
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.12
+    volumes:
+      - seed3_data:/data/npchain-testnet
+      - genesis_data:/genesis:ro
+    command: >
+      npchain_node
+        --testnet
+        --datadir /data/npchain-testnet
+        --genesis /genesis/genesis.dat
+        --port 19333 --seed
+        --peers seed1:19333,seed2:19333
+        --block-time 10
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+
+  # ─── MINER NODE ───
+  miner:
+    build:
+      context: ..
+      dockerfile: testnet/Dockerfile.testnet
+      target: miner
+    container_name: npchain_miner
+    hostname: miner
+    restart: unless-stopped
+    depends_on:
+      seed1:
+        condition: service_healthy
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.20
+    volumes:
+      - miner_data:/data/npchain-testnet
+      - genesis_data:/genesis:ro
+    command: >
+      npchain_miner
+        --testnet
+        --datadir /data/npchain-testnet
+        --genesis /genesis/genesis.dat
+        --peers seed1:19333,seed2:19333,seed3:19333
+        --threads 4
+        --block-time 10
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4G
+        reservations:
+          cpus: "2.0"
+          memory: 2G
+
+  # ─── FAUCET (serves test tCerts tokens) ───
+  faucet:
+    build:
+      context: ..
+      dockerfile: testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_faucet
+    hostname: faucet
+    restart: unless-stopped
+    depends_on:
+      seed1:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.30
+    volumes:
+      - genesis_data:/genesis:ro
+    environment:
+      - NPCHAIN_RPC_URL=http://seed1:18332
+      - FAUCET_PORT=8081
+      - FAUCET_DRIP_AMOUNT=1000
+      - FAUCET_COOLDOWN_SEC=60
+      - FAUCET_KEY_FILE=/genesis/genesis_faucet.key
+    command: >
+      npchain_node
+        --testnet
+        --faucet-mode
+        --rpc-url http://seed1:18332
+        --faucet-port 8081
+        --faucet-drip 1000
+        --faucet-key /genesis/genesis_faucet.key
+
+  # ─── BLOCK EXPLORER ───
+  explorer:
+    build:
+      context: ..
+      dockerfile: testnet/Dockerfile.testnet
+      target: node
+    container_name: npchain_explorer
+    hostname: explorer
+    restart: unless-stopped
+    depends_on:
+      seed1:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.40
+    environment:
+      - NPCHAIN_RPC_URL=http://seed1:18332
+      - EXPLORER_PORT=8080
+    command: >
+      npchain_node
+        --testnet
+        --explorer-mode
+        --rpc-url http://seed1:18332
+        --explorer-port 8080
+
+  # ─── MONITORING ───
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: npchain_prometheus
+    restart: unless-stopped
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.50
+    volumes:
+      - ./config/prometheus-testnet.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: npchain_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      testnet:
+        ipv4_address: 172.31.0.51
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=npchain-testnet
+    volumes:
+      - grafana_data:/var/lib/grafana

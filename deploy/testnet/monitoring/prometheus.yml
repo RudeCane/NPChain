@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'npchain_boot'
+    static_configs:
+      - targets: ['172.28.0.10:9100']
+        labels: { role: 'boot', mining: 'true' }
+
+  - job_name: 'npchain_seeds'
+    static_configs:
+      - targets: ['172.28.0.11:9100', '172.28.0.12:9100', '172.28.0.13:9100']
+        labels: { role: 'seed' }
+
+  - job_name: 'npchain_miner'
+    static_configs:
+      - targets: ['172.28.0.20:9100']
+        labels: { role: 'miner', mining: 'true' }
+
+  - job_name: 'npchain_rpc'
+    static_configs:
+      - targets: ['172.28.0.30:9100']
+        labels: { role: 'rpc' }

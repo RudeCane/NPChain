@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NPChain Explorer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--primary:#0784C3;--primary-dark:#065A82;--accent:#00C9A7;--bg:#F8F9FA;--white:#FFF;--card:#FFF;--border:#E9ECEF;--border-light:#F0F2F5;--text:#1B2559;--text-sec:#6C757D;--text-dim:#ADB5BD;--green:#198754;--link:#0784C3;--hover:#F0F7FF;--shadow:0 .5rem 1.2rem rgba(0,0,0,.08)}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;font-size:14px}
+a{color:var(--link);text-decoration:none}a:hover{color:var(--primary-dark)}
+.wrap{max-width:1140px;margin:0 auto;padding:0 20px}
+.header{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.header-top{background:var(--primary-dark);color:#fff;font-size:11px;padding:6px 0}
+.header-top .wrap{display:flex;justify-content:space-between;align-items:center}
+.header-main{padding:12px 0}
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+.logo-name{font-size:18px;font-weight:700;color:var(--text)}
+.logo-badge{font-size:9px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px;font-weight:600;margin-left:4px;vertical-align:super}
+.search-bar{flex:1;max-width:500px;position:relative}
+.search-bar input{width:100%;padding:10px 14px 10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:var(--bg)}
+.search-bar input:focus{border-color:var(--primary);background:#fff}
+.search-btn{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:var(--primary);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.search-btn:hover{background:var(--primary-dark)}
+.nav{display:flex;gap:6px}
+.nav a{padding:8px 14px;border-radius:6px;font-size:12px;font-weight:500;color:var(--text-sec)}
+.nav a:hover{background:var(--hover);color:var(--primary)}
+.hero{background:linear-gradient(135deg,var(--primary-dark) 0%,#0A3D62 100%);padding:24px 0;color:#fff}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.1);border-radius:12px;overflow:hidden}
+.stat-card{background:rgba(255,255,255,.05);padding:18px 20px}
+.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;opacity:.6;margin-bottom:4px}
+.stat-value{font-size:20px;font-weight:700}
+.stat-sub{font-size:11px;opacity:.5;margin-top:2px}
+.content{padding:24px 0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.card-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-light)}
+.card-title{font-size:14px;font-weight:600;color:var(--text)}
+.card-link{font-size:12px;color:var(--link);font-weight:500}
+.row{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border-light);gap:14px;transition:background .1s}
+.row:last-child{border-bottom:none}
+.row:hover{background:var(--hover)}
+.row-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.row-icon.block{background:#EBF5FB;color:var(--primary)}
+.row-icon.miner{background:#E8F8F5;color:var(--accent)}
+.row-content{flex:1;min-width:0}
+.row-main{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.row-label{font-size:12px;font-weight:600;color:var(--text)}
+.row-sub{font-size:11px;color:var(--text-sec)}
+.row-sub a{color:var(--link);font-size:11px}
+.row-right{text-align:right;flex-shrink:0}
+.row-amount{font-size:12px;font-weight:600;color:var(--text);background:var(--bg);padding:4px 10px;border-radius:6px;white-space:nowrap}
+.row-time{font-size:10px;color:var(--text-dim);margin-top:4px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}
+.badge-success{background:#D1FAE5;color:var(--green)}
+.badge-info{background:#DBEAFE;color:var(--primary)}
+.addr-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.addr-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.addr-value{font-family:'Roboto Mono',monospace;font-size:15px;color:var(--text);word-break:break-all;margin-bottom:16px}
+.addr-bal{font-size:28px;font-weight:700;color:var(--text)}
+.addr-bal-unit{font-size:14px;color:var(--text-sec)}
+.back-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--link);cursor:pointer;margin-bottom:12px}
+.full-table{width:100%;font-size:12px}
+.full-table th{padding:12px 16px;background:var(--bg);color:var(--text-sec);font-weight:500;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+.full-table td{padding:12px 16px;border-bottom:1px solid var(--border-light)}
+.full-table tr:hover td{background:var(--hover)}
+.empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
+.footer{text-align:center;padding:24px 0;font-size:11px;color:var(--text-dim);border-top:1px solid var(--border);margin-top:40px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.fade{animation:fadeIn .3s ease}
+@media(max-width:768px){.two-col{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.search-bar{order:3;max-width:100%;width:100%;margin-top:8px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top"><div class="wrap"><span>NPChain Testnet (TCR) &bull; Proof-of-NP-Witness</span><span id="chain-status">Connecting...</span></div></div>
+  <div class="header-main"><div class="wrap"><div class="header-inner">
+    <a class="logo" href="#" onclick="view='blocks';SR=null;render();return false"><div class="logo-icon">NP</div><span class="logo-name">NPChain</span><span class="logo-badge">Testnet</span></a>
+    <div class="search-bar"><input id="si" placeholder="Search by Address / Block Height" onkeydown="if(event.key==='Enter')doSearch()"><button class="search-btn" onclick="doSearch()">Search</button></div>
+    <div class="nav"><a href="#" onclick="view='blocks';SR=null;render();return false">Home</a><a href="index.html">Wallet</a><a href="kyc.html">KYC</a></div>
+  </div></div></div>
+</div>
+<div id="hero"></div>
+<div class="wrap"><div id="app"></div></div>
+<script>
+const RPC='http://localhost:18333';
+let C={height:0,diff:0,supply:'0',tip:'',on:false,accts:0};
+let AB=[];
+let BAL={};
+let view='blocks',SR=null;
+
+function doSearch(){const v=document.getElementById('si').value.trim();if(!v)return;if(v.startsWith('cert1')){fetch(RPC+'/api/v1/balance/'+v).then(r=>r.json()).then(d=>{SR={addr:d.address,bal:d.balance||0};view='address';render()}).catch(()=>{SR={addr:v,bal:0};view='address';render()})}else if(/^\d+$/.test(v)){view='blocks';SR=null;render();setTimeout(()=>{const el=document.getElementById('b-'+v);if(el){el.scrollIntoView({behavior:'smooth'});el.style.background='#FEF3C7';setTimeout(()=>el.style.background='',2000)}},100)}}
+
+function tAgo(ts){if(!ts)return'';const s=Math.floor(Date.now()/1000)-ts;if(s<5)return'just now';if(s<60)return s+' secs ago';if(s<3600)return Math.floor(s/60)+' mins ago';if(s<86400)return Math.floor(s/3600)+' hrs ago';return Math.floor(s/86400)+' days ago'}
+
+function fetchAll(){
+  fetch(RPC+'/api/v1/status').then(r=>r.json()).then(d=>{C={height:d.height||0,diff:d.difficulty||0,supply:(d.total_supply||0).toFixed(2),tip:d.tip_hash||'',on:true,accts:d.accounts||0};document.getElementById('chain-status').innerHTML='<span style="color:#00C9A7">&#9679;</span> Block #'+C.height;rHero();render()}).catch(()=>{C.on=false;document.getElementById('chain-status').innerHTML='<span style="color:#f44">&#9679;</span> Offline';rHero();render()});
+  fetch(RPC+'/api/v1/blocks').then(r=>r.json()).then(d=>{const bl=d.blocks||[];for(const b of bl)if(!AB.find(x=>x.height===b.height))AB.push(b);AB.sort((a,b)=>b.height-a.height);if(AB.length>500)AB=AB.slice(0,500);render()}).catch(()=>{});
+  fetch(RPC+'/api/v1/balances').then(r=>r.json()).then(d=>{if(d.balances)BAL=d.balances;render()}).catch(()=>{});
+}
+
+function rHero(){document.getElementById('hero').innerHTML='<div class="hero"><div class="wrap"><div class="stats-grid"><div class="stat-card"><div class="stat-label">Cert Price</div><div class="stat-value">Testnet</div><div class="stat-sub">No market value</div></div><div class="stat-card"><div class="stat-label">Block Height</div><div class="stat-value">'+C.height.toLocaleString()+'</div><div class="stat-sub">~15s block time</div></div><div class="stat-card"><div class="stat-label">Total Supply</div><div class="stat-value">'+C.supply+'</div><div class="stat-sub">100B cap/year</div></div><div class="stat-card"><div class="stat-label">Difficulty</div><div class="stat-value">'+C.diff.toLocaleString()+'</div><div class="stat-sub">'+C.accts+' active miner'+(C.accts!==1?'s':'')+'</div></div></div></div></div>'}
+
+function h(t,a,...ch){const el=document.createElement(t);if(a)Object.entries(a).forEach(([k,v])=>{if(k.startsWith('on'))el[k]=v;else if(k==='className')el.className=v;else if(k==='id')el.id=v;else if(k==='href')el.href=v;else if(k==='style'&&typeof v==='object')Object.assign(el.style,v);else if(k==='innerHTML')el.innerHTML=v;else el.setAttribute(k,v)});ch.flat().forEach(c=>{if(c!=null)el.append(typeof c==='string'?document.createTextNode(c):c)});return el}
+
+function render(){
+  const app=document.getElementById('app');app.innerHTML='';
+
+  if(view==='address'&&SR){
+    const w=h('div',{className:'fade'});
+    w.append(h('div',{className:'back-btn',onclick:()=>{view='blocks';SR=null;render()},innerHTML:'&#8592; Back to Explorer'}));
+    const ah=h('div',{className:'addr-header'});
+    ah.append(h('div',{className:'addr-label'},'Address'));
+    ah.append(h('div',{className:'addr-value'},SR.addr));
+    ah.append(h('div',{className:'addr-label'},'Balance'));
+    ah.append(h('div',{style:{display:'flex',alignItems:'baseline',gap:'8px'}},h('span',{className:'addr-bal'},(SR.bal||0).toFixed(4)),h('span',{className:'addr-bal-unit'},'Certs')));
+    w.append(ah);
+    const mb=AB.filter(b=>b.miner===SR.addr);
+    if(mb.length>0){
+      const mc=h('div',{className:'card',style:{marginTop:'16px'}});
+      mc.append(h('div',{className:'card-header'},h('span',{className:'card-title'},'Blocks Mined ('+mb.length+')'),h('span',{className:'badge badge-success'},'Miner')));
+      const tbl=h('table',{className:'full-table'});
+      tbl.append(h('thead',{},h('tr',{},h('th',{},'Block'),h('th',{},'Hash'),h('th',{},'Reward'),h('th',{},'Difficulty'),h('th',{},'Problem'),h('th',{},'Age'))));
+      const tb=h('tbody',{});
+      mb.forEach(b=>{tb.append(h('tr',{},h('td',{},h('a',{href:'#'},'#'+b.height)),h('td',{},h('span',{style:{fontFamily:'Roboto Mono',fontSize:'11px',color:'var(--link)'}},b.hash.substring(0,24)+'...')),h('td',{},h('span',{className:'badge badge-success'},'+'+b.reward.toFixed(2))),h('td',{},String(b.difficulty)),h('td',{},h('span',{className:'badge badge-info'},b.vars+'v/'+b.clauses+'c')),h('td',{style:{color:'var(--text-dim)'}},tAgo(b.timestamp))))});
+      tbl.append(tb);mc.append(tbl);w.append(mc);
+    }
+    app.append(w);app.append(h('div',{className:'footer'},'NPChain Testnet Explorer'));return;
+  }
+
+  const ct=h('div',{className:'content fade'});
+  const tc=h('div',{className:'two-col'});
+
+  // Blocks
+  const bc=h('div',{className:'card'});
+  bc.append(h('div',{className:'card-header'},h('span',{className:'card-title'},'Latest Blocks'),h('span',{className:'card-link'},AB.length+' loaded')));
+  const bb=h('div',{});
+  if(AB.length===0)bb.append(h('div',{className:'empty'},'No blocks yet'));
+  else AB.slice(0,10).forEach(b=>{
+    const row=h('div',{className:'row',id:'b-'+b.height});
+    row.append(h('div',{className:'row-icon block'},'Bk'));
+    const mid=h('div',{className:'row-content'});
+    mid.append(h('div',{className:'row-main'},h('span',{className:'row-label'},'#'+b.height),h('span',{style:{fontSize:'10px',color:'var(--text-dim)'}},tAgo(b.timestamp))));
+    const sub=h('div',{className:'row-sub'});sub.append('Miner ');sub.append(h('a',{href:'#',onclick:e=>{e.preventDefault();document.getElementById('si').value=b.miner;doSearch()}},b.miner.substring(0,20)+'...'));sub.append(h('span',{style:{color:'var(--text-dim)',marginLeft:'8px'}},b.vars+'v/'+b.clauses+'c'));
+    mid.append(sub);row.append(mid);
+    row.append(h('div',{className:'row-right'},h('div',{className:'row-amount'},'+'+b.reward.toFixed(2)+' Certs'),h('div',{className:'row-time'},'Diff: '+b.difficulty)));
+    bb.append(row);
+  });
+  bc.append(bb);tc.append(bc);
+
+  // Miners
+  const mc=h('div',{className:'card'});
+  const ml=Object.entries(BAL).sort((a,b)=>b[1]-a[1]);
+  mc.append(h('div',{className:'card-header'},h('span',{className:'card-title'},'Top Miners'),h('span',{className:'card-link'},ml.length+' addresses')));
+  const mb2=h('div',{});
+  if(ml.length===0)mb2.append(h('div',{className:'empty'},'No miners yet'));
+  else ml.slice(0,10).forEach((e,i)=>{
+    const addr=e[0],bal=e[1];
+    const row=h('div',{className:'row'});
+    row.append(h('div',{className:'row-icon miner',style:{fontSize:'11px',fontWeight:700}},'#'+(i+1)));
+    const mid=h('div',{className:'row-content'});
+    mid.append(h('div',{className:'row-main'},h('a',{href:'#',style:{fontFamily:'Roboto Mono',fontSize:'11px'},onclick:ev=>{ev.preventDefault();document.getElementById('si').value=addr;doSearch()}},addr)));
+    const bc2=AB.filter(b=>b.miner===addr).length;
+    mid.append(h('div',{className:'row-sub'},bc2+' block'+(bc2!==1?'s':'')+' mined'));
+    row.append(mid);
+    row.append(h('div',{className:'row-right'},h('div',{className:'row-amount'},(typeof bal==='number'?bal.toFixed(2):bal)+' Certs')));
+    mb2.append(row);
+  });
+  mc.append(mb2);tc.append(mc);ct.append(tc);
+
+  // Full table
+  if(AB.length>10){
+    const hc=h('div',{className:'card',style:{marginTop:'20px'}});
+    hc.append(h('div',{className:'card-header'},h('span',{className:'card-title'},'Block History'),h('span',{className:'card-link'},AB.length+' blocks')));
+    const tbl=h('table',{className:'full-table'});
+    tbl.append(h('thead',{},h('tr',{},h('th',{},'Block'),h('th',{},'Hash'),h('th',{},'Miner'),h('th',{},'Reward'),h('th',{},'Diff'),h('th',{},'Problem'),h('th',{},'Age'))));
+    const tb=h('tbody',{});
+    AB.slice(0,50).forEach(b=>{tb.append(h('tr',{id:'bh-'+b.height},h('td',{},h('a',{href:'#'},'#'+b.height)),h('td',{},h('span',{style:{fontFamily:'Roboto Mono',fontSize:'11px',color:'var(--link)'}},b.hash.substring(0,20)+'...')),h('td',{},h('a',{href:'#',style:{fontSize:'11px'},onclick:e=>{e.preventDefault();document.getElementById('si').value=b.miner;doSearch()}},b.miner.substring(0,18)+'...')),h('td',{},h('span',{className:'badge badge-success'},'+'+b.reward.toFixed(2))),h('td',{},String(b.difficulty)),h('td',{},h('span',{className:'badge badge-info'},b.vars+'v/'+b.clauses+'c')),h('td',{style:{color:'var(--text-dim)',fontSize:'12px'}},tAgo(b.timestamp))))});
+    tbl.append(tb);hc.append(tbl);ct.append(hc);
+  }
+  app.append(ct);
+  app.append(h('div',{className:'footer'},'NPChain Testnet Explorer &bull; Proof-of-NP-Witness &bull; SHA3-256 (Keccak) &bull; ',h('a',{href:'https://github.com/RudeCane/NPChain'},'GitHub')));
+}
+rHero();fetchAll();setInterval(fetchAll,3000);
+</script>
+</body>
+</html>

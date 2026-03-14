@@ -1,0 +1,33 @@
+# ═══════════════════════════════════════════════════════════════════
+#  NPChain Core Node — Hardened Runtime
+#  This container has NO public ports and NO internet access.
+#  Only Proxy 8 (Final Gateway) can reach it.
+# ═══════════════════════════════════════════════════════════════════
+
+FROM ubuntu:24.04 AS builder
+
+RUN apt-get update && apt-get install -y \
+    build-essential cmake git \
+    libssl-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY . .
+
+RUN mkdir -p build && cd build && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_FLAGS="-O2 -fstack-protector-strong -D_FORTIFY_SOURCE=2 -fPIE -pie" && \
+    make -j$(nproc) npchain_node npchain_miner npchain_wallet
+
+FROM gcr.io/distroless/cc-debian12:latest
+
+COPY --from=builder /build/build/npchain_node   /usr/local/bin/npchain_node
+COPY --from=builder /build/build/npchain_miner  /usr/local/bin/npchain_miner
+COPY --from=builder /build/build/npchain_wallet /usr/local/bin/npchain_wallet
+
+USER nonroot:nonroot
+
+EXPOSE 9341
+
+ENTRYPOINT ["/usr/local/bin/npchain_node"]

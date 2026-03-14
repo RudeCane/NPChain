@@ -1,0 +1,432 @@
+# ═══════════════════════════════════════════════════════════════════
+#  NPChain 8-Proxy Shield — Docker Compose Deployment
+#
+#  Deploys all 8 proxy layers + core node as isolated containers.
+#  Each proxy runs in its own network namespace with only the
+#  specific connections it needs (zero-trust networking).
+#
+#  Usage:
+#    docker-compose -f docker-compose.shield.yml up -d
+#    docker-compose -f docker-compose.shield.yml logs -f proxy_anomaly
+#    docker-compose -f docker-compose.shield.yml exec core_node npchain_wallet info
+#
+#  Network topology:
+#    public_net ──▶ edge_net ──▶ filter_net ──▶ inspect_net ──▶ internal_net ──▶ core_net
+#    (internet)     (P1)        (P2,P3,P4)     (P5,P6)        (P7,P8)         (core)
+# ═══════════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+# ─── Isolated Networks (each proxy pair gets its own) ───────────
+networks:
+  public_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.1.0/24
+  edge_net:
+    driver: bridge
+    internal: true           # No external access
+    ipam:
+      config:
+        - subnet: 172.30.2.0/24
+  filter_net:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.3.0/24
+  inspect_net:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.4.0/24
+  internal_net:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.5.0/24
+  core_net:
+    driver: bridge
+    internal: true           # Most isolated — no route to internet
+    ipam:
+      config:
+        - subnet: 172.30.6.0/24
+
+# ─── Shared volumes for key material and config ─────────────────
+volumes:
+  proxy_keys:                # Dilithium keypairs for each proxy
+  shield_config:             # Shared configuration
+  core_data:                 # Blockchain data (persistent)
+  metrics_data:              # Prometheus metrics
+
+services:
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 1: EDGE SENTINEL
+  #  The ONLY container with a public-facing port.
+  #  Absorbs DDoS, geo-filters, connection limiting.
+  # ═══════════════════════════════════════════════════════════════
+  proxy_edge:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        PROXY_LAYER: edge_sentinel
+    container_name: npchain_proxy_edge
+    hostname: proxy-edge
+    restart: unless-stopped
+    ports:
+      - "9333:9333"          # ← THE ONLY PUBLIC PORT IN THE ENTIRE DEPLOYMENT
+    networks:
+      public_net:
+        ipv4_address: 172.30.1.10
+      edge_net:
+        ipv4_address: 172.30.2.10
+    environment:
+      - PROXY_LAYER=1
+      - NEXT_PROXY_HOST=172.30.2.20
+      - NEXT_PROXY_PORT=9334
+      - MAX_CONN_PER_IP=5
+      - MAX_GLOBAL_CONN=10000
+      - SYN_COOKIES=true
+      - GEO_BLOCK_ENABLED=true
+    volumes:
+      - proxy_keys:/etc/npchain/keys:ro
+      - shield_config:/etc/npchain/config:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "1.0"
+          memory: 1G
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 2: PROTOCOL GATE
+  #  Validates message structure and protocol conformance.
+  # ═══════════════════════════════════════════════════════════════
+  proxy_protocol:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        PROXY_LAYER: protocol_gate
+    container_name: npchain_proxy_protocol
+    hostname: proxy-protocol
+    restart: unless-stopped
+    networks:
+      edge_net:
+        ipv4_address: 172.30.2.20
+      filter_net:
+        ipv4_address: 172.30.3.10
+    environment:
+      - PROXY_LAYER=2
+      - NEXT_PROXY_HOST=172.30.3.20
+      - NEXT_PROXY_PORT=9335
+      - MAX_MESSAGE_SIZE=4194304
+      - STRICT_VERSION=true
+    volumes:
+      - proxy_keys:/etc/npchain/keys:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 3: RATE GOVERNOR
+  #  Token-bucket rate limiting per IP, per peer, and global.
+  # ═══════════════════════════════════════════════════════════════
+  proxy_rate:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        PROXY_LAYER: rate_governor
+    container_name: npchain_proxy_rate
+    hostname: proxy-rate
+    restart: unless-stopped
+    networks:
+      filter_net:
+        ipv4_address: 172.30.3.20
+    environment:
+      - PROXY_LAYER=3
+      - NEXT_PROXY_HOST=172.30.3.30
+      - NEXT_PROXY_PORT=9336
+      - MSG_PER_SEC_PER_IP=100
+      - BYTES_PER_SEC_PER_IP=524288
+      - GLOBAL_MSG_PER_SEC=50000
+    volumes:
+      - proxy_keys:/etc/npchain/keys:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 4: IDENTITY VERIFIER
+  #  Dilithium-based peer authentication + ban list enforcement.
+  # ═══════════════════════════════════════════════════════════════
+  proxy_identity:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        PROXY_LAYER: identity_verifier
+    container_name: npchain_proxy_identity
+    hostname: proxy-identity
+    restart: unless-stopped
+    networks:
+      filter_net:
+        ipv4_address: 172.30.3.30
+      inspect_net:
+        ipv4_address: 172.30.4.10
+    environment:
+      - PROXY_LAYER=4
+      - NEXT_PROXY_HOST=172.30.4.20
+      - NEXT_PROXY_PORT=9337
+      - MIN_SUBNETS=4
+      - MAX_PEERS_PER_SUBNET=3
+      - MAX_PEERS_PER_ASN=5
+    volumes:
+      - proxy_keys:/etc/npchain/keys:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 5: CONTENT INSPECTOR
+  #  Deep packet inspection — validates transaction/block structure.
+  # ═══════════════════════════════════════════════════════════════
+  proxy_content:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        PROXY_LAYER: content_inspector
+    container_name: npchain_proxy_content
+    hostname: proxy-content
+    restart: unless-stopped
+    networks:
+      inspect_net:
+        ipv4_address: 172.30.4.20
+    environment:
+      - PROXY_LAYER=5
+      - NEXT_PROXY_HOST=172.30.4.30
+      - NEXT_PROXY_PORT=9338
+      - VALIDATE_TX=true
+      - VALIDATE_BLOCK=true
+      - TX_CACHE_SIZE=100000
+    volumes:
+      - proxy_keys:/etc/npchain/keys:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 6: ANOMALY DETECTOR
+  #  Behavioral analysis — detects eclipse, sybil, and flood attacks.
+  # ═══════════════════════════════════════════════════════════════
+  proxy_anomaly:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        PROXY_LAYER: anomaly_detector
+    container_name: npchain_proxy_anomaly
+    hostname: proxy-anomaly
+    restart: unless-stopped
+    networks:
+      inspect_net:
+        ipv4_address: 172.30.4.30
+      internal_net:
+        ipv4_address: 172.30.5.10
+    environment:
+      - PROXY_LAYER=6
+      - NEXT_PROXY_HOST=172.30.5.20
+      - NEXT_PROXY_PORT=9339
+      - ECLIPSE_THRESHOLD=0.7
+      - SYBIL_THRESHOLD=0.8
+      - FLOOD_THRESHOLD=0.6
+    volumes:
+      - proxy_keys:/etc/npchain/keys:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G       # Needs more RAM for behavior history
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 7: ENCRYPTION BRIDGE
+  #  Re-encrypts with internal-only Kyber keys, strips metadata.
+  # ═══════════════════════════════════════════════════════════════
+  proxy_encrypt:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        PROXY_LAYER: encryption_bridge
+    container_name: npchain_proxy_encrypt
+    hostname: proxy-encrypt
+    restart: unless-stopped
+    networks:
+      internal_net:
+        ipv4_address: 172.30.5.20
+    environment:
+      - PROXY_LAYER=7
+      - NEXT_PROXY_HOST=172.30.5.30
+      - NEXT_PROXY_PORT=9340
+      - KEY_ROTATION_HOURS=24
+    volumes:
+      - proxy_keys:/etc/npchain/keys:rw   # Needs write for key rotation
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    cap_drop: [ALL]
+    cap_add: [DAC_OVERRIDE]  # For key file writes
+    security_opt: [no-new-privileges:true]
+
+  # ═══════════════════════════════════════════════════════════════
+  #  PROXY 8: FINAL GATEWAY
+  #  Verifies complete attestation chain. Only forwards if all
+  #  7 prior proxies have signed off. Circuit breaker protection.
+  # ═══════════════════════════════════════════════════════════════
+  proxy_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        PROXY_LAYER: final_gateway
+    container_name: npchain_proxy_gateway
+    hostname: proxy-gateway
+    restart: unless-stopped
+    networks:
+      internal_net:
+        ipv4_address: 172.30.5.30
+      core_net:
+        ipv4_address: 172.30.6.10
+    environment:
+      - PROXY_LAYER=8
+      - CORE_NODE_HOST=172.30.6.20
+      - CORE_NODE_PORT=9341
+      - CIRCUIT_BREAKER_THRESHOLD=0.1
+      - CIRCUIT_BREAKER_WINDOW=1000
+    volumes:
+      - proxy_keys:/etc/npchain/keys:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+
+  # ═══════════════════════════════════════════════════════════════
+  #  CORE NODE — The Protected Server
+  #  Has NO public ports. Only Proxy 8 can reach it.
+  #  Runs the full NPChain node (consensus, mining, chain state).
+  # ═══════════════════════════════════════════════════════════════
+  core_node:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+    container_name: npchain_core
+    hostname: core-node
+    restart: unless-stopped
+    networks:
+      core_net:
+        ipv4_address: 172.30.6.20
+    # NOTE: NO PORTS EXPOSED — completely isolated
+    environment:
+      - DATA_DIR=/data/npchain
+      - LISTEN_PORT=9341
+      - ACCEPT_ONLY_FROM=172.30.6.10   # Only Proxy 8's IP
+    volumes:
+      - core_data:/data/npchain
+      - proxy_keys:/etc/npchain/keys:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 8G
+        reservations:
+          cpus: "2.0"
+          memory: 4G
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+
+  # ═══════════════════════════════════════════════════════════════
+  #  MONITORING: Prometheus + Grafana
+  # ═══════════════════════════════════════════════════════════════
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: npchain_prometheus
+    restart: unless-stopped
+    networks:
+      internal_net:
+        ipv4_address: 172.30.5.50
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - metrics_data:/prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: npchain_grafana
+    restart: unless-stopped
+    networks:
+      internal_net:
+        ipv4_address: 172.30.5.51
+    ports:
+      - "127.0.0.1:3000:3000"   # Local-only access for admin
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=changeme
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M

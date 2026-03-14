@@ -1,0 +1,66 @@
+{
+  "network": "testnet",
+  "chain_id": "0x544E50",
+  "version": "0.1.0",
+  "ticker": "tNPC",
+
+  "consensus": {
+    "algorithm": "proof_of_np_witness",
+    "block_time_sec": 10,
+    "difficulty_window": 30,
+    "max_difficulty_adjustment": 2.0,
+    "genesis_difficulty": 1,
+    "vdf_iterations": 1000,
+    "committee_size": 5,
+    "quorum": 3,
+    "checkpoint_interval": 100,
+    "problems": ["k-SAT", "Subset-Sum", "Graph-Coloring", "Hamiltonian-Path"]
+  },
+
+  "emission": {
+    "model": "annual_cap_unlimited_supply",
+    "annual_cap_npc": 52500000,
+    "blocks_per_year": 3153600,
+    "block_reward_npc": 16.647,
+    "supply_cap": "unlimited",
+    "note": "10s blocks = 3,153,600 blocks/year on testnet. Mainnet uses 60s = 525,600 blocks/year."
+  },
+
+  "mining": {
+    "enabled": true,
+    "threads": 4,
+    "max_sat_variables": 20,
+    "solver_timeout_sec": 30,
+    "portfolio_copies": 2
+  },
+
+  "network_p2p": {
+    "listen_port": 19333,
+    "max_peers": 50,
+    "min_peer_subnets": 1,
+    "seed_nodes": [
+      "seed1:19333",
+      "seed2:19333",
+      "seed3:19333"
+    ]
+  },
+
+  "rpc": {
+    "enabled": true,
+    "listen_port": 18332,
+    "cors_origins": ["*"],
+    "auth_required": false
+  },
+
+  "crypto": {
+    "signature": "CRYSTALS-Dilithium Level 5",
+    "kem": "CRYSTALS-Kyber-1024",
+    "hash": "SHA3-256 / SHAKE-256 / BLAKE3",
+    "agility": "enabled"
+  },
+
+  "proxy_shield": {
+    "enabled": false,
+    "note": "Disabled for testnet. Enable for mainnet production."
+  }
+}

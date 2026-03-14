@@ -1,0 +1,47 @@
+# ═══════════════════════════════════════════════════════════════════
+#  NPChain Testnet — Multi-stage Dockerfile
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Stage: Build everything ──
+FROM ubuntu:24.04 AS builder
+
+RUN apt-get update && apt-get install -y \
+    build-essential cmake git pkg-config \
+    libssl-dev curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY . .
+
+RUN mkdir -p build && cd build && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_FLAGS="-O2 -fstack-protector-strong -D_FORTIFY_SOURCE=2" && \
+    make -j$(nproc) npchain_node npchain_miner npchain_wallet npchain_genesis
+
+# ── Stage: Genesis generator (run-once init container) ──
+FROM ubuntu:24.04 AS genesis
+RUN apt-get update && apt-get install -y libssl3 && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /build/build/npchain_genesis /usr/local/bin/npchain_genesis
+RUN useradd -m npchain
+USER npchain
+ENTRYPOINT ["/usr/local/bin/npchain_genesis"]
+
+# ── Stage: Full node (seed / miner / rpc) ──
+FROM ubuntu:24.04 AS node
+RUN apt-get update && apt-get install -y libssl3 curl && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/build/npchain_node   /usr/local/bin/npchain_node
+COPY --from=builder /build/build/npchain_miner  /usr/local/bin/npchain_miner
+COPY --from=builder /build/build/npchain_wallet /usr/local/bin/npchain_wallet
+
+# Entrypoint script that decides node vs miner based on env vars
+COPY deploy/testnet/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+RUN useradd -m npchain && mkdir -p /data/npchain/testnet && chown npchain:npchain /data/npchain/testnet
+USER npchain
+
+EXPOSE 19333 18332 9100
+
+ENTRYPOINT ["/entrypoint.sh"]

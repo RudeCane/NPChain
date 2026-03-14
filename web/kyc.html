@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NPChain — KYC & Migration Portal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--accent:#00e5a0;--accent-dim:#00e5a033;--accent-bg:#00e5a00a;--gold:#f59e0b;--gold-dim:#f59e0b33}
+body{background:#06080c;color:#c0c8d8;font-family:'JetBrains Mono',monospace;min-height:100vh;display:flex;justify-content:center}
+#app{width:100%;max-width:520px;min-height:100vh;border-left:1px solid #141a2a;border-right:1px solid #141a2a}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #141a2a;background:#080b12}
+.logo{display:flex;align-items:center;gap:10px}
+.hex{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),#0088cc);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#06080c}
+.hex.lg{width:56px;height:56px;font-size:18px}
+.main{padding:20px 16px;overflow-y:auto}
+h1{font-family:Inter,sans-serif;font-size:22px;font-weight:700;color:#e8ecf4;margin-bottom:4px}
+h2{font-family:Inter,sans-serif;font-size:16px;font-weight:600;color:#d0d6e4;margin-bottom:12px}
+.sub{font-size:12px;color:#4a5470;margin-bottom:24px}
+.card{padding:20px;background:#0c1018;border:1px solid #141a2a;border-radius:12px;margin-bottom:14px}
+.label{font-size:10px;color:#4a5470;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.label.mb{margin-bottom:14px}
+input,select,textarea{width:100%;padding:12px 14px;background:#0a0e16;border:1px solid #1a2035;border-radius:8px;color:#e0e4f0;font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;transition:border .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234a5470'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+textarea{min-height:80px;resize:vertical}
+.btn{width:100%;padding:14px;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .2s}
+.btn:hover{opacity:.9}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#06080c}
+.btn-gold{background:var(--gold);color:#06080c}
+.btn-ghost{background:transparent;color:#5a6480;border:1px solid #1a2035;font-weight:500;font-size:13px}
+.btn-ghost:hover{border-color:#2a3050;color:#8a90a0}
+.btn-sm{padding:10px;font-size:12px}
+.error{padding:10px 14px;background:#2a0a0a;border:1px solid #ff4444;border-radius:8px;color:#ff6666;font-size:12px;margin-bottom:12px}
+.success{padding:10px 14px;background:#0a2a0a;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;margin-bottom:12px}
+.warning{padding:10px 14px;background:#2a1a0a;border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-size:12px;margin-bottom:12px}
+.info{font-size:11px;color:#5a6480;line-height:2}
+.info span{color:#8a90a0}.info .hl{color:var(--accent)}.info .gold{color:var(--gold)}
+
+/* Steps */
+.steps{display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid #141a2a;padding-bottom:0}
+.step{flex:1;text-align:center;padding:12px 4px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#2a3050;border-bottom:2px solid transparent;cursor:default;transition:all .2s}
+.step.active{color:var(--accent);border-bottom-color:var(--accent)}
+.step.done{color:#1a6040;border-bottom-color:#1a6040}
+.step.done::after{content:' ✓'}
+
+/* Status badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;letter-spacing:.5px}
+.badge-pending{background:#2a1a0a;color:var(--gold);border:1px solid var(--gold-dim)}
+.badge-verified{background:#0a2a0a;color:var(--accent);border:1px solid var(--accent-dim)}
+.badge-rejected{background:#2a0a0a;color:#ff4444;border:1px solid #ff444433}
+.badge-migrated{background:#0a0a2a;color:#6b8aff;border:1px solid #6b8aff33}
+
+/* Migration summary */
+.mig-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #0e1420}
+.mig-row:last-child{border-bottom:none}
+.mig-label{font-size:12px;color:#5a6480}
+.mig-value{font-size:13px;font-weight:600;color:#e0e4f0}
+.mig-value.green{color:var(--accent)}.mig-value.gold{color:var(--gold)}
+.arrow{text-align:center;font-size:24px;color:#2a3050;padding:8px 0}
+
+/* File upload */
+.upload{border:2px dashed #1a2035;border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px}
+.upload:hover{border-color:var(--accent-dim);background:var(--accent-bg)}
+.upload-text{font-size:12px;color:#4a5470}
+.upload-text strong{color:#6a7490}
+.file-name{font-size:11px;color:var(--accent);margin-top:6px}
+
+.hint{font-size:10px;color:#3a4060;line-height:1.6;margin-top:8px}
+.divider{border:none;border-top:1px solid #141a2a;margin:16px 0}
+.center{text-align:center}
+
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fadein{animation:fadein .3s ease}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #0a0e16;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ═══ SHA3-256 (same as chain + wallet) ═══
+const RC=[0x0000000000000001n,0x0000000000008082n,0x800000000000808an,0x8000000080008000n,0x000000000000808bn,0x0000000080000001n,0x8000000080008081n,0x8000000000008009n,0x000000000000008an,0x0000000000000088n,0x0000000080008009n,0x000000008000000an,0x000000008000808bn,0x800000000000008bn,0x8000000000008089n,0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,0x000000000000800an,0x800000008000000an,0x8000000080008081n,0x8000000000008080n,0x0000000080000001n,0x8000000080008008n];
+const RO=[[0,1,62,28,27],[36,44,6,55,20],[3,10,43,25,39],[41,45,15,21,8],[18,2,61,56,14]];
+const MK=(1n<<64n)-1n;const rl=(x,n)=>((x<<BigInt(n))|(x>>BigInt(64-n)))&MK;
+function kf(s){for(let r=0;r<24;r++){const C=[],D=[],B=[];for(let x=0;x<5;x++)C[x]=s[x]^s[x+5]^s[x+10]^s[x+15]^s[x+20];for(let x=0;x<5;x++)D[x]=C[(x+4)%5]^rl(C[(x+1)%5],1);for(let i=0;i<25;i++)s[i]=(s[i]^D[i%5])&MK;for(let x=0;x<5;x++)for(let y=0;y<5;y++)B[y+5*((2*x+3*y)%5)]=rl(s[x+5*y],RO[y][x]);for(let x=0;x<5;x++)for(let y=0;y<5;y++)s[x+5*y]=(B[x+5*y]^((~B[(x+1)%5+5*y]&MK)&B[(x+2)%5+5*y]))&MK;s[0]=(s[0]^RC[r])&MK;}}
+function sha3(d){const rate=136,st=Array(25).fill(0n);const b=typeof d==='string'?new TextEncoder().encode(d):new Uint8Array(d);let p=0;for(let i=0;i<b.length;i++){st[p>>3]=(st[p>>3]^(BigInt(b[i])<<BigInt((p%8)*8)))&MK;p++;if(p===rate){kf(st);p=0;}}st[p>>3]=(st[p>>3]^(0x06n<<BigInt((p%8)*8)))&MK;st[(rate-1)>>3]=(st[(rate-1)>>3]^(0x80n<<BigInt(((rate-1)%8)*8)))&MK;kf(st);const o=new Uint8Array(32);for(let i=0;i<32;i++)o[i]=Number((st[i>>3]>>BigInt((i%8)*8))&0xFFn);return o;}
+function toHex(b){return Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('')}
+
+// ═══ Storage ═══
+const LS={
+  save(k,v){try{localStorage.setItem('npckyc_'+k,JSON.stringify(v))}catch(e){}},
+  load(k){try{const v=localStorage.getItem('npckyc_'+k);return v?JSON.parse(v):null}catch{return null}},
+  del(k){try{localStorage.removeItem('npckyc_'+k)}catch{}}
+};
+
+// ═══ State ═══
+let S = {
+  step: 0, // 0=start, 1=kyc form, 2=id upload, 3=review, 4=approved, 5=migrate, 6=done
+  err: '', suc: '', warn: '',
+  // KYC fields
+  fullName: '', email: '', country: '', dob: '',
+  idType: 'passport', idNumber: '', idFile: null, idFileName: '',
+  selfieFile: null, selfieFileName: '',
+  termsAgreed: false,
+  // Wallet fields
+  testnetAddr: '', mainnetAddr: '',
+  testnetBalance: '',
+  // Migration
+  migrateAmount: '',
+  migrationHash: '',
+  migrationStatus: '', // pending, complete
+  // Stored
+  kycStatus: 'none', // none, pending, verified, rejected
+  kycId: '',
+};
+
+function setState(p){Object.assign(S,p);render();}
+function clearMsg(){setTimeout(()=>setState({err:'',suc:'',warn:''}),4000);}
+
+// Load saved state
+function init(){
+  const saved = LS.load('state');
+  if(saved) Object.assign(S, saved);
+  // If KYC was verified, jump to migrate step
+  if(S.kycStatus === 'verified' && S.step < 5) S.step = 5;
+  if(S.kycStatus === 'pending' && S.step < 3) S.step = 3;
+  render();
+}
+
+function saveState(){
+  LS.save('state', {
+    step:S.step, fullName:S.fullName, email:S.email, country:S.country, dob:S.dob,
+    idType:S.idType, idNumber:S.idNumber, idFileName:S.idFileName, selfieFileName:S.selfieFileName,
+    termsAgreed:S.termsAgreed, testnetAddr:S.testnetAddr, mainnetAddr:S.mainnetAddr,
+    testnetBalance:S.testnetBalance, kycStatus:S.kycStatus, kycId:S.kycId,
+    migrationHash:S.migrationHash, migrationStatus:S.migrationStatus, migrateAmount:S.migrateAmount
+  });
+}
+
+// ═══ KYC Steps ═══
+function submitKYCForm(){
+  if(!S.fullName.trim()){setState({err:'Full name is required'});clearMsg();return;}
+  if(!S.email.includes('@')){setState({err:'Valid email is required'});clearMsg();return;}
+  if(!S.country){setState({err:'Select your country'});clearMsg();return;}
+  if(!S.dob){setState({err:'Date of birth is required'});clearMsg();return;}
+  if(!S.idNumber.trim()){setState({err:'ID number is required'});clearMsg();return;}
+  setState({step:2,err:''});saveState();
+}
+
+function submitDocuments(){
+  if(!S.idFileName){setState({err:'Please upload your ID document'});clearMsg();return;}
+  if(!S.selfieFileName){setState({err:'Please upload a selfie with your ID'});clearMsg();return;}
+  if(!S.termsAgreed){setState({err:'You must agree to the terms'});clearMsg();return;}
+
+  // Generate KYC ID
+  const kycId = 'KYC-' + toHex(sha3(S.fullName + S.email + Date.now())).substring(0, 12).toUpperCase();
+  setState({step:3, kycStatus:'pending', kycId, err:''});
+  saveState();
+
+  // Simulate review (auto-approve after 5 seconds for testnet)
+  setTimeout(()=>{
+    setState({kycStatus:'verified', step:4, suc:'KYC verified! You can now migrate your Certs.'});
+    saveState();
+    clearMsg();
+  }, 5000);
+}
+
+function proceedToMigrate(){
+  setState({step:5,err:'',suc:''});saveState();
+}
+
+function submitMigration(){
+  if(!S.testnetAddr.startsWith('cert1') || S.testnetAddr.length < 20){
+    setState({err:'Invalid testnet address'});clearMsg();return;
+  }
+  if(!S.mainnetAddr.startsWith('cert1') || S.mainnetAddr.length < 20){
+    setState({err:'Invalid mainnet address'});clearMsg();return;
+  }
+  if(!S.migrateAmount || parseFloat(S.migrateAmount) <= 0){
+    setState({err:'Invalid amount'});clearMsg();return;
+  }
+
+  setState({migrationStatus:'pending'});
+
+  // Simulate migration (2 seconds)
+  setTimeout(()=>{
+    const hash = toHex(sha3(S.testnetAddr + S.mainnetAddr + S.migrateAmount + Date.now()));
+    setState({
+      step:6, migrationStatus:'complete', migrationHash: hash,
+      suc:'Migration complete! Your Certs will appear on mainnet within 10 blocks.'
+    });
+    saveState();
+    clearMsg();
+  }, 2000);
+}
+
+function resetAll(){
+  if(!confirm('Reset all KYC data and start over?')) return;
+  LS.del('state');
+  Object.assign(S, {step:0,err:'',suc:'',warn:'',fullName:'',email:'',country:'',dob:'',
+    idType:'passport',idNumber:'',idFile:null,idFileName:'',selfieFile:null,selfieFileName:'',
+    termsAgreed:false,testnetAddr:'',mainnetAddr:'',testnetBalance:'',migrateAmount:'',
+    migrationHash:'',migrationStatus:'',kycStatus:'none',kycId:''});
+  render();
+}
+
+// ═══ DOM Helpers ═══
+function h(tag,attrs,...ch){
+  const el=document.createElement(tag);
+  if(attrs)Object.entries(attrs).forEach(([k,v])=>{
+    if(k.startsWith('on'))el[k]=v;
+    else if(k==='className')el.className=v;
+    else if(k==='style'&&typeof v==='object')Object.assign(el.style,v);
+    else if(k==='value')el.value=v;
+    else if(k==='checked')el.checked=v;
+    else if(k==='selected')el.selected=v;
+    else el.setAttribute(k,v);
+  });
+  ch.flat().forEach(c=>{if(c!=null)el.append(typeof c==='string'?document.createTextNode(c):c)});
+  return el;
+}
+
+// ═══ Render ═══
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // Topbar
+  app.append(h('div',{className:'topbar'},
+    h('div',{className:'logo'},
+      h('div',{className:'hex'},'NP'),
+      h('span',{style:{fontSize:'14px',fontWeight:600,color:'#e0e4f0'}},'NPChain'),
+      h('span',{style:{fontSize:'10px',color:'#4a5470',marginLeft:'6px'}},'KYC Portal')
+    ),
+    S.kycStatus==='verified'
+      ? h('span',{className:'badge badge-verified'},'VERIFIED')
+      : S.kycStatus==='pending'
+        ? h('span',{className:'badge badge-pending'},'PENDING')
+        : null
+  ));
+
+  const main = h('div',{className:'main'});
+
+  // Step indicator
+  if(S.step > 0 && S.step < 6){
+    const stepNames = ['','Identity','Documents','Review','Approved','Migrate'];
+    const stepsEl = h('div',{className:'steps'});
+    for(let i=1;i<=5;i++){
+      let cls = 'step';
+      if(i < S.step) cls += ' done';
+      else if(i === S.step) cls += ' active';
+      stepsEl.append(h('div',{className:cls},stepNames[i]));
+    }
+    main.append(stepsEl);
+  }
+
+  // Messages
+  if(S.err) main.append(h('div',{className:'error'},S.err));
+  if(S.suc) main.append(h('div',{className:'success'},S.suc));
+  if(S.warn) main.append(h('div',{className:'warning'},S.warn));
+
+  // ─── Step 0: Landing ───
+  if(S.step === 0){
+    main.append(h('div',{className:'center fadein',style:{paddingTop:'40px'}},
+      h('div',{className:'hex lg',style:{margin:'0 auto 20px'}},'NP'),
+      h('h1',{},'KYC & Migration'),
+      h('div',{className:'sub'},'Verify your identity to migrate testnet Certs to mainnet'),
+    ));
+
+    main.append(h('div',{className:'card'},
+      h('h2',{},'How It Works'),
+      h('div',{className:'info'},
+        h('div',{},'1. ',h('span',{},'Complete KYC'),' — verify your identity'),
+        h('div',{},'2. ',h('span',{},'Upload documents'),' — government ID + selfie'),
+        h('div',{},'3. ',h('span',{},'Get verified'),' — automatic review'),
+        h('div',{},'4. ',h('span',{className:'gold'},'Migrate Certs'),' — testnet → mainnet'),
+      )
+    ));
+
+    main.append(h('div',{className:'card'},
+      h('h2',{},'Migration Details'),
+      h('div',{className:'info'},
+        h('div',{},'Source: ',h('span',{className:'hl'},'Testnet (TCR)')),
+        h('div',{},'Destination: ',h('span',{className:'gold'},'Mainnet (CRT)')),
+        h('div',{},'Conversion: ',h('span',{},'1:1 (no fees during migration window)')),
+        h('div',{},'Requirement: ',h('span',{},'KYC verification required')),
+        h('div',{},'Limit: ',h('span',{},'No maximum per verified account')),
+        h('div',{},'Finality: ',h('span',{},'~10 mainnet blocks (~10 minutes)')),
+      )
+    ));
+
+    main.append(h('div',{style:{padding:'0 0 20px'}},
+      h('button',{className:'btn btn-primary',onclick:()=>setState({step:1})},'Begin KYC Verification'),
+      h('div',{className:'hint',style:{marginTop:'12px',textAlign:'center'}},'Your data is processed securely. Documents are encrypted and never shared with third parties.')
+    ));
+  }
+
+  // ─── Step 1: KYC Form ───
+  if(S.step === 1){
+    main.append(h('div',{className:'card fadein'},
+      h('h2',{},'Personal Information'),
+      h('div',{className:'label'},'Full Legal Name'),
+      h('input',{type:'text',placeholder:'As shown on your government ID',value:S.fullName,oninput:e=>{S.fullName=e.target.value}}),
+
+      h('div',{className:'label'},'Email Address'),
+      h('input',{type:'text',placeholder:'you@example.com',value:S.email,oninput:e=>{S.email=e.target.value}}),
+
+      h('div',{className:'label'},'Country of Residence'),
+      h('select',{value:S.country,onchange:e=>{S.country=e.target.value}},
+        h('option',{value:''},'Select country...'),
+        ...['United States','United Kingdom','Canada','Australia','Germany','France','Japan','South Korea','Brazil','India','Nigeria','Singapore','UAE','Mexico','Other'].map(c=>
+          h('option',{value:c,selected:S.country===c?true:undefined},c)
+        )
+      ),
+
+      h('div',{className:'label'},'Date of Birth'),
+      h('input',{type:'date',value:S.dob,oninput:e=>{S.dob=e.target.value},style:{colorScheme:'dark'}}),
+
+      h('div',{style:{marginTop:'4px'}}),
+      h('div',{className:'label'},'ID Document Type'),
+      h('select',{value:S.idType,onchange:e=>{S.idType=e.target.value}},
+        h('option',{value:'passport',selected:S.idType==='passport'?true:undefined},'Passport'),
+        h('option',{value:'drivers_license',selected:S.idType==='drivers_license'?true:undefined},"Driver's License"),
+        h('option',{value:'national_id',selected:S.idType==='national_id'?true:undefined},'National ID Card'),
+      ),
+
+      h('div',{className:'label'},'ID Number'),
+      h('input',{type:'text',placeholder:'Document number',value:S.idNumber,oninput:e=>{S.idNumber=e.target.value}}),
+
+      h('button',{className:'btn btn-primary',onclick:submitKYCForm},'Continue →'),
+    ));
+  }
+
+  // ─── Step 2: Document Upload ───
+  if(S.step === 2){
+    const makeUpload = (label, fileName, fileKey, nameKey) => {
+      const el = h('div',{},
+        h('div',{className:'label'},label),
+        h('div',{className:'upload',onclick:()=>{
+          const inp = document.createElement('input');
+          inp.type='file'; inp.accept='image/*,.pdf';
+          inp.onchange=e=>{
+            const f=e.target.files[0];
+            if(f){S[nameKey]=f.name; S[fileKey]=f; render();}
+          };
+          inp.click();
+        }},
+          h('div',{className:'upload-text'},
+            fileName ? h('span',{},h('strong',{},'✓ '),fileName) :
+            h('span',{},h('strong',{},'Click to upload'),' — JPG, PNG, or PDF')
+          )
+        )
+      );
+      return el;
+    };
+
+    main.append(h('div',{className:'card fadein'},
+      h('h2',{},'Upload Documents'),
+
+      makeUpload('Government-Issued ID (front)', S.idFileName, 'idFile', 'idFileName'),
+      makeUpload('Selfie Holding Your ID', S.selfieFileName, 'selfieFile', 'selfieFileName'),
+
+      h('div',{className:'hint',style:{marginBottom:'14px'}},'Selfie must clearly show your face and the ID document. Both must be legible.'),
+
+      h('hr',{className:'divider'}),
+
+      h('div',{style:{display:'flex',alignItems:'flex-start',gap:'10px',marginBottom:'14px'}},
+        h('input',{type:'checkbox',checked:S.termsAgreed,onchange:e=>{S.termsAgreed=e.target.checked},style:{marginTop:'3px',width:'auto',marginBottom:0}}),
+        h('div',{style:{fontSize:'11px',color:'#5a6480',lineHeight:'1.6'}},
+          'I confirm that the information provided is accurate, I am the rightful owner of the testnet wallet, and I agree to the NPChain KYC and migration terms.'
+        )
+      ),
+
+      h('button',{className:'btn btn-primary',onclick:submitDocuments},'Submit for Verification'),
+      h('button',{className:'btn btn-ghost',style:{marginTop:'8px'},onclick:()=>setState({step:1})},'← Back'),
+    ));
+  }
+
+  // ─── Step 3: Under Review ───
+  if(S.step === 3){
+    main.append(h('div',{className:'card fadein center',style:{paddingTop:'32px',paddingBottom:'32px'}},
+      h('div',{className:'spinner'}),
+      h('span',{style:{fontSize:'16px',fontWeight:600,color:'#e0e4f0'}},'Under Review'),
+      h('div',{style:{fontSize:'12px',color:'#4a5470',marginTop:'12px',marginBottom:'20px'}},
+        'Your documents are being verified. This usually takes a few minutes.'
+      ),
+      h('div',{className:'info',style:{textAlign:'left'}},
+        h('div',{},'KYC ID: ',h('span',{className:'hl'},S.kycId)),
+        h('div',{},'Name: ',h('span',{},S.fullName)),
+        h('div',{},'Email: ',h('span',{},S.email)),
+        h('div',{},'Country: ',h('span',{},S.country)),
+        h('div',{},'Document: ',h('span',{},S.idType.replace('_',' ')+' — '+S.idNumber)),
+        h('div',{},'Status: ',h('span',{className:'badge badge-pending'},'PENDING')),
+      ),
+      h('div',{className:'hint',style:{marginTop:'16px'}},'You will be automatically advanced when verification completes. Keep this page open.')
+    ));
+  }
+
+  // ─── Step 4: Approved ───
+  if(S.step === 4){
+    main.append(h('div',{className:'card fadein center',style:{paddingTop:'32px',paddingBottom:'32px'}},
+      h('div',{style:{fontSize:'48px',marginBottom:'12px'}},'✓'),
+      h('h2',{style:{color:'var(--accent)'}},'KYC Verified'),
+      h('div',{style:{fontSize:'12px',color:'#4a5470',marginBottom:'20px'}},
+        'Your identity has been verified. You can now migrate testnet Certs to mainnet.'
+      ),
+      h('div',{className:'info',style:{textAlign:'left'}},
+        h('div',{},'KYC ID: ',h('span',{className:'hl'},S.kycId)),
+        h('div',{},'Name: ',h('span',{},S.fullName)),
+        h('div',{},'Status: ',h('span',{className:'badge badge-verified'},'VERIFIED')),
+      ),
+      h('button',{className:'btn btn-gold',style:{marginTop:'20px'},onclick:proceedToMigrate},'Proceed to Migration →')
+    ));
+  }
+
+  // ─── Step 5: Migrate ───
+  if(S.step === 5){
+    main.append(h('div',{className:'card fadein'},
+      h('h2',{},'Migrate Certs'),
+      h('div',{style:{fontSize:'11px',color:'#4a5470',marginBottom:'16px'}},'Transfer your mined testnet Certs to mainnet. 1:1 conversion, zero fees.'),
+
+      h('div',{className:'label'},'Testnet Address (source)'),
+      h('input',{type:'text',placeholder:'cert1... (your testnet wallet)',value:S.testnetAddr,oninput:e=>{S.testnetAddr=e.target.value}}),
+
+      h('div',{className:'label'},'Mainnet Address (destination)'),
+      h('input',{type:'text',placeholder:'cert1... (your mainnet wallet)',value:S.mainnetAddr,oninput:e=>{S.mainnetAddr=e.target.value}}),
+
+      h('div',{className:'label'},'Amount to Migrate'),
+      h('input',{type:'number',placeholder:'Amount in Certs',value:S.migrateAmount,step:'0.01',min:'0',oninput:e=>{S.migrateAmount=e.target.value}}),
+
+      h('hr',{className:'divider'}),
+
+      // Migration summary
+      h('div',{},
+        h('div',{className:'mig-row'},h('div',{className:'mig-label'},'From'),h('div',{className:'mig-value green'},'Testnet (TCR)')),
+        h('div',{className:'mig-row'},h('div',{className:'mig-label'},'To'),h('div',{className:'mig-value gold'},'Mainnet (CRT)')),
+        h('div',{className:'mig-row'},h('div',{className:'mig-label'},'Amount'),h('div',{className:'mig-value'},(S.migrateAmount||'0')+' Certs')),
+        h('div',{className:'mig-row'},h('div',{className:'mig-label'},'Fee'),h('div',{className:'mig-value green'},'0 (migration window)')),
+        h('div',{className:'mig-row'},h('div',{className:'mig-label'},'KYC'),h('div',{},h('span',{className:'badge badge-verified'},'VERIFIED'))),
+      ),
+
+      h('button',{className:'btn btn-gold',style:{marginTop:'16px'},
+        disabled:S.migrationStatus==='pending'?'true':null,
+        onclick:submitMigration},
+        S.migrationStatus==='pending'
+          ? h('span',{},h('span',{className:'spinner'}),'Processing...')
+          : 'Migrate to Mainnet'
+      ),
+      h('div',{className:'hint'},'This action burns your testnet Certs and mints an equal amount on mainnet. Irreversible.'),
+    ));
+  }
+
+  // ─── Step 6: Complete ───
+  if(S.step === 6){
+    main.append(h('div',{className:'card fadein center',style:{paddingTop:'32px',paddingBottom:'32px'}},
+      h('div',{style:{fontSize:'48px',marginBottom:'12px'}},'🎉'),
+      h('h2',{style:{color:'var(--gold)'}},'Migration Complete'),
+      h('div',{style:{fontSize:'12px',color:'#4a5470',marginBottom:'20px'}},
+        'Your Certs have been migrated to mainnet.'
+      ),
+    ));
+
+    main.append(h('div',{className:'card'},
+      h('div',{className:'label mb'},'Migration Receipt'),
+      h('div',{className:'info'},
+        h('div',{},'TX Hash: ',h('span',{className:'hl'},S.migrationHash?.substring(0,32)+'...')),
+        h('div',{},'From: ',h('span',{},S.testnetAddr?.substring(0,28)+'...')),
+        h('div',{},'To: ',h('span',{},S.mainnetAddr?.substring(0,28)+'...')),
+        h('div',{},'Amount: ',h('span',{className:'gold'},S.migrateAmount+' Certs')),
+        h('div',{},'Network: ',h('span',{},'Testnet → Mainnet')),
+        h('div',{},'Status: ',h('span',{className:'badge badge-migrated'},'MIGRATED')),
+        h('div',{},'KYC ID: ',h('span',{},S.kycId)),
+        h('div',{},'Finality: ',h('span',{},'~10 mainnet blocks')),
+      ),
+    ));
+
+    main.append(h('div',{style:{padding:'0 0 20px'}},
+      h('button',{className:'btn btn-gold',onclick:()=>setState({step:5,migrationStatus:'',migrationHash:'',migrateAmount:'',err:'',suc:''})},'Migrate More Certs'),
+      h('button',{className:'btn btn-ghost',style:{marginTop:'8px'},onclick:resetAll},'Reset KYC'),
+    ));
+  }
+
+  // Footer info on all screens
+  if(S.step >= 1){
+    main.append(h('div',{style:{padding:'12px 0 20px'}},
+      h('button',{className:'btn btn-ghost btn-sm',onclick:resetAll},'Reset All Data'),
+    ));
+  }
+
+  app.append(main);
+}
+
+init();
+</script>
+</body>
+</html>

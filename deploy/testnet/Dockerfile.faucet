@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir flask requests
+
+WORKDIR /app
+
+COPY deploy/testnet/faucet.py /app/faucet.py
+
+RUN useradd -m faucet
+USER faucet
+
+EXPOSE 8080
+
+CMD ["python", "/app/faucet.py"]
