@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPChain Governance</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#06080c;color:#c0c8d8;font-family:'JetBrains Mono',monospace;min-height:100vh;display:flex;justify-content:center}
+#app{width:100%;max-width:700px;min-height:100vh;border-left:1px solid #141a2a;border-right:1px solid #141a2a}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #141a2a;background:#080b12}
+.logo{display:flex;align-items:center;gap:10px}
+.hex{width:30px;height:30px;background:linear-gradient(135deg,#00e5a0,#0088cc);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#06080c}
+.logo-text{font-size:14px;font-weight:600;color:#e0e4f0}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-dot.online{background:#00e5a0;box-shadow:0 0 8px #00e5a066}
+.status-dot.offline{background:#ff4444;box-shadow:0 0 8px #ff444466}
+.net-badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:1px;border:1px solid #00e5a033;color:#00e5a0;background:#00e5a00a}
+.main{padding:20px}
+.section-title{font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:#e8ecf4;margin-bottom:16px}
+.card{padding:20px;background:#0c1018;border:1px solid #141a2a;border-radius:12px;margin-bottom:12px}
+.label{font-size:10px;color:#4a5470;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.btn{padding:12px 20px;background:#00e5a0;color:#06080c;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.5px}
+.btn:hover{opacity:.9}
+.btn-sm{padding:8px 14px;font-size:11px}
+.btn-approve{background:#00e5a0;color:#06080c}
+.btn-reject{background:#ff4444;color:#fff}
+.btn-abstain{background:#3a4060;color:#c0c8d8}
+.btn-ghost{padding:12px 20px;background:transparent;color:#5a6480;border:1px solid #1a2035;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer}
+.btn-ghost:hover{border-color:#2a3050;color:#8a90a0}
+input,textarea,select{width:100%;padding:10px 12px;background:#0a0e16;border:1px solid #1a2035;border-radius:8px;color:#e0e4f0;font-family:inherit;font-size:13px;outline:none;margin-bottom:10px}
+input:focus,textarea:focus,select:focus{border-color:#00e5a0}
+textarea{min-height:80px;resize:vertical}
+select{appearance:none;cursor:pointer}
+.proposal{border:1px solid #1a2035;border-radius:12px;padding:16px;margin-bottom:12px;background:#0c1018;transition:border-color .2s}
+.proposal:hover{border-color:#2a3050}
+.proposal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.proposal-title{font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:#e8ecf4}
+.proposal-id{font-size:11px;color:#4a5470;font-weight:600}
+.proposal-desc{font-size:12px;color:#6a7490;line-height:1.6;margin-bottom:12px}
+.proposal-meta{display:flex;gap:16px;font-size:11px;color:#4a5470;margin-bottom:12px;flex-wrap:wrap}
+.proposal-meta span{color:#8a90a0}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.status-active{background:#00e5a022;color:#00e5a0;border:1px solid #00e5a044}
+.status-passed{background:#3b82f622;color:#3b82f6;border:1px solid #3b82f644}
+.status-rejected{background:#ff444422;color:#ff4444;border:1px solid #ff444444}
+.status-activated{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
+.status-expired{background:#6a749022;color:#6a7490;border:1px solid #6a749044}
+.vote-bar{height:24px;background:#141a2a;border-radius:12px;overflow:hidden;display:flex;margin:8px 0}
+.vote-bar .approve{background:#00e5a0;transition:width .3s}
+.vote-bar .reject{background:#ff4444;transition:width .3s}
+.vote-bar .abstain{background:#3a4060;transition:width .3s}
+.vote-stats{display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px}
+.vote-stats .approve-text{color:#00e5a0}
+.vote-stats .reject-text{color:#ff4444}
+.vote-stats .abstain-text{color:#6a7490}
+.vote-actions{display:flex;gap:8px;margin-top:12px}
+.vote-actions button{flex:1}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px}
+.config-grid .key{color:#4a5470}
+.config-grid .val{color:#00e5a0;text-align:right}
+.tab-bar{display:flex;gap:4px;margin-bottom:20px}
+.tab{padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;letter-spacing:.5px}
+.tab.active{background:#00e5a0;color:#06080c}
+.tab.inactive{background:#141a2a;color:#6a7490}
+.tab:hover{opacity:.85}
+.empty{text-align:center;padding:40px;color:#3a4060;font-size:13px}
+.addr-input{display:flex;gap:8px;margin-bottom:16px}
+.addr-input input{margin-bottom:0}
+.addr-input button{white-space:nowrap}
+.error{padding:10px 14px;background:#2a0a0a;border:1px solid #ff4444;border-radius:8px;color:#ff6666;font-size:12px;margin-bottom:12px}
+.success{padding:10px 14px;background:#0a2a0a;border:1px solid #00e5a0;border-radius:8px;color:#00e5a0;font-size:12px;margin-bottom:12px}
+.your-vote{font-size:11px;color:#00e5a0;margin-top:4px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+
+var RPC='http://localhost:18333';
+var voterAddress='';
+var voterBalance=0;
+var proposals=[];
+var govConfig={};
+var chainHeight=0;
+var online=false;
+var tab='proposals';
+var err='',suc='';
+var pollTimer=null;
+
+// Form state for new proposal
+var form={type:'general',title:'',description:'',param_key:'',param_value:''};
+
+function fetchAll(){
+  fetch(RPC+'/api/v1/governance/proposals').then(function(r){return r.json()}).then(function(d){
+    proposals=d.proposals||[];chainHeight=d.chain_height||0;online=true;render();
+  }).catch(function(){online=false;render()});
+
+  fetch(RPC+'/api/v1/governance/config').then(function(r){return r.json()}).then(function(d){
+    govConfig=d;render();
+  }).catch(function(){});
+
+  if(voterAddress){
+    fetch(RPC+'/api/v1/balance/'+voterAddress).then(function(r){return r.json()}).then(function(d){
+      voterBalance=d.balance_base||0;render();
+    }).catch(function(){});
+  }
+}
+
+function startPolling(){if(pollTimer)clearInterval(pollTimer);fetchAll();pollTimer=setInterval(fetchAll,5000)}
+
+function submitProposal(){
+  if(!voterAddress){err='Enter your wallet address first';render();return}
+  if(!form.title){err='Title is required';render();return}
+  if(!form.description){err='Description is required';render();return}
+
+  var body=JSON.stringify({
+    author:voterAddress,type:form.type,title:form.title,
+    description:form.description,param_key:form.param_key,param_value:form.param_value
+  });
+
+  fetch(RPC+'/api/v1/governance/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.ok){suc='Proposal #'+d.proposal_id+' submitted!';err='';form={type:'general',title:'',description:'',param_key:'',param_value:''};tab='proposals';fetchAll()}
+      else{err=d.error||'Submission failed';suc=''}
+      render();setTimeout(function(){suc='';err='';render()},5000);
+    }).catch(function(e){err='Network error: '+e.message;render()});
+}
+
+function castVote(proposalId,choice){
+  if(!voterAddress){err='Enter your wallet address first';render();return}
+
+  var body=JSON.stringify({proposal_id:proposalId,voter:voterAddress,choice:choice});
+  fetch(RPC+'/api/v1/governance/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.ok){suc='Vote cast: '+choice+' ('+d.voting_power.toFixed(0)+' Certs power)';err='';fetchAll()}
+      else{err=d.error||'Vote failed';suc=''}
+      render();setTimeout(function(){suc='';err='';render()},5000);
+    }).catch(function(e){err='Network error';render()});
+}
+
+function h(tag,props){var el=document.createElement(tag);var ch=Array.prototype.slice.call(arguments,2);if(props)Object.keys(props).forEach(function(k){if(k.indexOf('on')===0)el[k]=props[k];else if(k==='className')el.className=props[k];else if(k==='style'&&typeof props[k]==='object')Object.assign(el.style,props[k]);else el.setAttribute(k,props[k])});ch.forEach(function(c){if(Array.isArray(c))c.forEach(function(cc){if(cc!=null)el.append(typeof cc==='string'||typeof cc==='number'?document.createTextNode(String(cc)):cc)});else if(c!=null&&c!==false)el.append(typeof c==='string'||typeof c==='number'?document.createTextNode(String(c)):c)});return el}
+
+function statusBadge(status){
+  var cls={active:'status-active',passed:'status-passed',rejected:'status-rejected',activated:'status-activated',expired:'status-expired'};
+  return h('span',{className:'status-badge '+(cls[status]||'')},status.toUpperCase());
+}
+
+function renderProposal(p){
+  var totalVotes=p.votes_approve+p.votes_reject+p.votes_abstain;
+  var appPct=totalVotes>0?(p.votes_approve/totalVotes*100):0;
+  var rejPct=totalVotes>0?(p.votes_reject/totalVotes*100):0;
+  var absPct=totalVotes>0?(p.votes_abstain/totalVotes*100):0;
+  var blocksLeft=p.vote_end_height>chainHeight?(p.vote_end_height-chainHeight):0;
+  var timeLeft=blocksLeft>0?Math.ceil(blocksLeft*15/60)+' min':'Ended';
+
+  var myVote=null;
+  if(voterAddress&&p.status==='active'){
+    // Check if already voted (we don't have this info from API yet, just show buttons)
+  }
+
+  var card=h('div',{className:'proposal'},
+    h('div',{className:'proposal-header'},
+      h('div',{},
+        h('span',{className:'proposal-id'},'NIP-'+String(p.id).padStart(3,'0')+' '),
+        statusBadge(p.status)
+      ),
+      h('div',{style:{fontSize:'10px',color:'#4a5470'}},p.type)
+    ),
+    h('div',{className:'proposal-title',style:{marginTop:'8px'}},p.title),
+    h('div',{className:'proposal-desc'},p.description),
+    h('div',{className:'proposal-meta'},
+      h('div',{},'Author: ',h('span',{},p.author.substring(0,20)+'...')),
+      h('div',{},'Voters: ',h('span',{},String(p.total_voters))),
+      p.status==='active'?h('div',{},'Time left: ',h('span',{style:{color:'#f59e0b'}},timeLeft)):null,
+      h('div',{},'Approval: ',h('span',{style:{color:p.approval_rate>=75?'#00e5a0':'#ff6b6b'}},p.approval_rate.toFixed(1)+'%'))
+    ),
+    // Vote bar
+    h('div',{className:'vote-stats'},
+      h('span',{className:'approve-text'},'Approve: '+p.votes_approve.toFixed(0)+' Certs'),
+      h('span',{className:'reject-text'},'Reject: '+p.votes_reject.toFixed(0)+' Certs'),
+      h('span',{className:'abstain-text'},'Abstain: '+p.votes_abstain.toFixed(0)+' Certs')
+    ),
+    h('div',{className:'vote-bar'},
+      h('div',{className:'approve',style:{width:appPct+'%'}}),
+      h('div',{className:'reject',style:{width:rejPct+'%'}}),
+      h('div',{className:'abstain',style:{width:absPct+'%'}})
+    )
+  );
+
+  // Vote buttons (only for active proposals)
+  if(p.status==='active'&&voterAddress){
+    var pid=p.id;
+    card.append(h('div',{className:'vote-actions'},
+      h('button',{className:'btn btn-sm btn-approve',onclick:function(){castVote(pid,'approve')}},'Approve'),
+      h('button',{className:'btn btn-sm btn-reject',onclick:function(){castVote(pid,'reject')}},'Reject'),
+      h('button',{className:'btn btn-sm btn-abstain',onclick:function(){castVote(pid,'abstain')}},'Abstain')
+    ));
+  }
+
+  // Param change details
+  if(p.param_key){
+    card.append(h('div',{style:{marginTop:'10px',fontSize:'11px',color:'#f59e0b',background:'#2a1a00',padding:'8px 12px',borderRadius:'6px'}},
+      'Parameter: ',h('span',{style:{color:'#e8ecf4'}},p.param_key),' = ',h('span',{style:{color:'#00e5a0'}},p.param_value)
+    ));
+  }
+
+  return card;
+}
+
+function render(){
+  var app=document.getElementById('app');
+  app.innerHTML='';
+
+  // Topbar
+  app.append(h('div',{className:'topbar'},
+    h('div',{className:'logo'},h('div',{className:'hex'},'NP'),h('div',{className:'logo-text'},'NPChain Governance')),
+    h('div',{style:{display:'flex',alignItems:'center',gap:'10px'}},
+      h('span',{className:'status-dot '+(online?'online':'offline')}),
+      h('span',{className:'net-badge'},'TESTNET'),
+      chainHeight>0?h('span',{style:{fontSize:'10px',color:'#4a5470'}},'#'+chainHeight):null
+    )
+  ));
+
+  var main=h('div',{className:'main'});
+  app.append(main);
+
+  // Voter address input
+  main.append(h('div',{className:'card'},
+    h('div',{className:'label'},'YOUR WALLET ADDRESS'),
+    h('div',{className:'addr-input'},
+      h('input',{type:'text',placeholder:'cert1...',value:voterAddress,oninput:function(e){voterAddress=e.target.value;fetchAll()}}),
+      voterBalance>0?h('span',{style:{fontSize:'11px',color:'#00e5a0',whiteSpace:'nowrap',alignSelf:'center'}},(voterBalance/1000000).toFixed(0)+' Certs'):null
+    ),
+    h('div',{style:{fontSize:'10px',color:'#4a5470'}},'Your balance = your voting power. Paste the same address you use for mining.')
+  ));
+
+  if(err)main.append(h('div',{className:'error'},err));
+  if(suc)main.append(h('div',{className:'success'},suc));
+
+  // Tabs
+  main.append(h('div',{className:'tab-bar'},
+    h('button',{className:'tab '+(tab==='proposals'?'active':'inactive'),onclick:function(){tab='proposals';render()}},'Proposals ('+proposals.length+')'),
+    h('button',{className:'tab '+(tab==='submit'?'active':'inactive'),onclick:function(){tab='submit';render()}},'Submit Proposal'),
+    h('button',{className:'tab '+(tab==='config'?'active':'inactive'),onclick:function(){tab='config';render()}},'Rules')
+  ));
+
+  // ─── PROPOSALS TAB ───
+  if(tab==='proposals'){
+    if(proposals.length===0){
+      main.append(h('div',{className:'empty'},'No proposals yet. Be the first to submit one!'));
+    } else {
+      // Active first, then by ID desc
+      var sorted=proposals.slice().sort(function(a,b){
+        if(a.status==='active'&&b.status!=='active')return -1;
+        if(b.status==='active'&&a.status!=='active')return 1;
+        return b.id-a.id;
+      });
+      sorted.forEach(function(p){main.append(renderProposal(p))});
+    }
+  }
+
+  // ─── SUBMIT TAB ───
+  if(tab==='submit'){
+    main.append(h('div',{className:'card'},
+      h('div',{className:'section-title'},'New Proposal'),
+      h('div',{style:{fontSize:'11px',color:'#4a5470',marginBottom:'16px'}},'You need at least ~47,564 Certs (1 block reward) to submit a proposal.'),
+
+      h('div',{className:'label'},'PROPOSAL TYPE'),
+      h('select',{value:form.type,onchange:function(e){form.type=e.target.value;render()}},
+        h('option',{value:'general'},'General'),
+        h('option',{value:'param_change'},'Parameter Change'),
+        h('option',{value:'crypto_upgrade'},'Crypto Upgrade'),
+        h('option',{value:'fee_change'},'Fee Change'),
+        h('option',{value:'emission_change'},'Emission Change')
+      ),
+
+      h('div',{className:'label'},'TITLE'),
+      h('input',{type:'text',placeholder:'e.g. NIP: Increase difficulty adjustment window',value:form.title,oninput:function(e){form.title=e.target.value},maxlength:'200'}),
+
+      h('div',{className:'label'},'DESCRIPTION'),
+      h('textarea',{placeholder:'Explain what this proposal does and why it matters...',value:form.description,oninput:function(e){form.description=e.target.value},maxlength:'5000'}),
+
+      form.type==='param_change'?h('div',{},
+        h('div',{className:'label'},'PARAMETER KEY'),
+        h('input',{type:'text',placeholder:'e.g. block_time, difficulty_window',value:form.param_key,oninput:function(e){form.param_key=e.target.value}}),
+        h('div',{className:'label'},'NEW VALUE'),
+        h('input',{type:'text',placeholder:'e.g. 30',value:form.param_value,oninput:function(e){form.param_value=e.target.value}})
+      ):null,
+
+      h('button',{className:'btn',style:{width:'100%',marginTop:'8px'},onclick:submitProposal},'Submit Proposal')
+    ));
+  }
+
+  // ─── CONFIG TAB ───
+  if(tab==='config'){
+    main.append(h('div',{className:'card'},
+      h('div',{className:'section-title'},'Governance Rules'),
+      h('div',{className:'config-grid'},
+        h('div',{className:'key'},'Voting Period'),h('div',{className:'val'},(govConfig.vote_period_blocks||240)+' blocks (~'+Math.round((govConfig.vote_period_blocks||240)*15/60)+' min)'),
+        h('div',{className:'key'},'Activation Delay'),h('div',{className:'val'},(govConfig.activation_delay||120)+' blocks (~'+Math.round((govConfig.activation_delay||120)*15/60)+' min)'),
+        h('div',{className:'key'},'Approval Threshold'),h('div',{className:'val'},(govConfig.approval_threshold||0.75)*100+'%'),
+        h('div',{className:'key'},'Min Participation'),h('div',{className:'val'},(govConfig.participation_min||0.1)*100+'%'),
+        h('div',{className:'key'},'Min Balance to Propose'),h('div',{className:'val'},(govConfig.min_proposer_balance||47564)+' Certs'),
+        h('div',{className:'key'},'Emergency Vote Period'),h('div',{className:'val'},(govConfig.emergency_vote_period||40)+' blocks'),
+        h('div',{className:'key'},'Emergency Threshold'),h('div',{className:'val'},(govConfig.emergency_threshold||0.9)*100+'%')
+      )
+    ));
+
+    main.append(h('div',{className:'card'},
+      h('div',{className:'section-title'},'How Governance Works'),
+      h('div',{style:{fontSize:'12px',color:'#6a7490',lineHeight:'1.8'}},
+        'Anyone with at least 1 block reward (~47,564 Certs) can submit a proposal.',h('br'),h('br'),
+        'All Cert holders can vote. Your voting power equals your Certs balance.',h('br'),h('br'),
+        'Proposals need 75% approval AND 10% participation to pass.',h('br'),h('br'),
+        'Passed proposals activate after a delay, giving nodes time to update.',h('br'),h('br'),
+        'Emergency proposals (security fixes) need 90% approval but vote faster.'
+      )
+    ));
+
+    main.append(h('div',{className:'card'},
+      h('div',{className:'section-title'},'Proposal Types'),
+      h('div',{style:{fontSize:'12px',color:'#6a7490',lineHeight:'2'}},
+        h('span',{style:{color:'#00e5a0'}},'Parameter Change'),' — modify block time, difficulty window, etc.',h('br'),
+        h('span',{style:{color:'#00e5a0'}},'Crypto Upgrade'),' — add or deprecate cryptographic algorithms',h('br'),
+        h('span',{style:{color:'#00e5a0'}},'Fee Change'),' — adjust transaction fee structure',h('br'),
+        h('span',{style:{color:'#00e5a0'}},'Emission Change'),' — modify emission parameters',h('br'),
+        h('span',{style:{color:'#00e5a0'}},'General'),' — any other governance decision'
+      )
+    ));
+  }
+
+  // Back to wallet link
+  main.append(h('div',{style:{textAlign:'center',padding:'20px'}},
+    h('a',{href:'index.html',style:{color:'#4a5470',fontSize:'12px',textDecoration:'none'}},'Back to Wallet'),
+    h('span',{style:{color:'#1a2035',margin:'0 12px'}},'|'),
+    h('a',{href:'explorer.html',style:{color:'#4a5470',fontSize:'12px',textDecoration:'none'}},'Block Explorer')
+  ));
+}
+
+// Init
+try{voterAddress=JSON.parse(localStorage.getItem('npc3_wallet')||'{}').address||''}catch(e){}
+startPolling();
+render();
+
+</script>
+</body>
+</html>

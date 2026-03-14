@@ -267,6 +267,12 @@ function render(){
     ));
   }
 
+  // Navigation links
+  main.append(h('div',{style:{display:'flex',gap:'8px',padding:'0 16px',marginBottom:'12px'}},
+    h('a',{href:'governance.html',style:{flex:'1',padding:'12px',background:'#141a2a',border:'1px solid #1a2035',borderRadius:'8px',color:'#00e5a0',textDecoration:'none',textAlign:'center',fontSize:'12px',fontWeight:'600',fontFamily:'inherit'}},'Governance & Voting'),
+    h('a',{href:'explorer.html',style:{flex:'1',padding:'12px',background:'#141a2a',border:'1px solid #1a2035',borderRadius:'8px',color:'#5a6480',textDecoration:'none',textAlign:'center',fontSize:'12px',fontWeight:'600',fontFamily:'inherit'}},'Block Explorer')
+  ));
+
   // Delete wallet
   main.append(h('div',{style:{padding:'20px 16px'}},
     h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')
