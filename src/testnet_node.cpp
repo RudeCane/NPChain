@@ -297,6 +297,215 @@ struct ChainState {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+//  Governance System — On-Chain Voting
+// ═══════════════════════════════════════════════════════════════════
+
+enum class ProposalType : uint8_t {
+    PARAM_CHANGE    = 1,  // Change consensus parameters
+    CRYPTO_UPGRADE  = 2,  // Add/deprecate crypto algorithm
+    FEE_CHANGE      = 3,  // Modify fee structure
+    EMISSION_CHANGE = 4,  // Adjust emission parameters
+    GENERAL         = 5,  // General governance proposal
+};
+
+enum class ProposalStatus : uint8_t {
+    ACTIVE     = 0,  // Voting is open
+    PASSED     = 1,  // Vote passed, awaiting activation
+    REJECTED   = 2,  // Vote failed
+    ACTIVATED  = 3,  // Applied to chain
+    EXPIRED    = 4,  // Voting period ended without quorum
+};
+
+enum class VoteChoice : uint8_t {
+    APPROVE = 1,
+    REJECT  = 2,
+    ABSTAIN = 3,
+};
+
+struct Proposal {
+    uint32_t id;
+    ProposalType type;
+    ProposalStatus status = ProposalStatus::ACTIVE;
+    std::string title;
+    std::string description;
+    std::string author_address;   // cert1... of proposer
+
+    // Voting parameters
+    uint64_t submit_height;       // Block height when submitted
+    uint64_t vote_end_height;     // Voting closes at this height
+    uint64_t activation_height;   // Applied at this height (if passed)
+
+    // If PARAM_CHANGE: what changes
+    std::string param_key;        // e.g. "block_time", "difficulty_window"
+    std::string param_value;      // e.g. "30", "72"
+
+    // Vote tallies (in base units = voting power)
+    uint64_t votes_approve = 0;
+    uint64_t votes_reject  = 0;
+    uint64_t votes_abstain = 0;
+    std::map<std::string, VoteChoice> voters;  // address → choice (one vote per address)
+
+    double approval_rate() const {
+        uint64_t voted = votes_approve + votes_reject;
+        return voted > 0 ? static_cast<double>(votes_approve) / voted : 0.0;
+    }
+
+    double participation_rate(uint64_t total_supply) const {
+        uint64_t total_voted = votes_approve + votes_reject + votes_abstain;
+        return total_supply > 0 ? static_cast<double>(total_voted) / total_supply : 0.0;
+    }
+};
+
+// Governance constants (testnet — shorter periods for testing)
+namespace gov {
+    constexpr uint64_t VOTE_PERIOD_BLOCKS    = 240;     // ~1 hour on testnet (240 * 15s)
+    constexpr uint64_t ACTIVATION_DELAY      = 120;     // ~30 min after vote passes
+    constexpr double   APPROVAL_THRESHOLD    = 0.75;    // 75% of voting power
+    constexpr double   PARTICIPATION_MIN     = 0.10;    // 10% minimum participation (testnet)
+    constexpr uint64_t MIN_PROPOSER_BALANCE  = 47564688000ULL; // ~47,564 Certs (1 block reward)
+    constexpr uint64_t EMERGENCY_VOTE_PERIOD = 40;      // ~10 min for emergencies
+    constexpr double   EMERGENCY_THRESHOLD   = 0.90;    // 90% for emergency
+}
+
+struct GovernanceState {
+    std::vector<Proposal> proposals;
+    uint32_t next_id = 1;
+
+    // Submit a new proposal
+    bool submit_proposal(const std::string& author, ProposalType type,
+                         const std::string& title, const std::string& description,
+                         uint64_t current_height, uint64_t author_balance,
+                         const std::string& param_key = "",
+                         const std::string& param_value = "") {
+        // Must have minimum balance to propose
+        if (author_balance < gov::MIN_PROPOSER_BALANCE) return false;
+        if (title.empty() || title.size() > 200) return false;
+        if (description.empty() || description.size() > 5000) return false;
+
+        Proposal p;
+        p.id = next_id++;
+        p.type = type;
+        p.status = ProposalStatus::ACTIVE;
+        p.title = title;
+        p.description = description;
+        p.author_address = author;
+        p.submit_height = current_height;
+        p.vote_end_height = current_height + gov::VOTE_PERIOD_BLOCKS;
+        p.activation_height = current_height + gov::VOTE_PERIOD_BLOCKS + gov::ACTIVATION_DELAY;
+        p.param_key = param_key;
+        p.param_value = param_value;
+
+        proposals.push_back(std::move(p));
+        return true;
+    }
+
+    // Cast a vote
+    bool cast_vote(uint32_t proposal_id, const std::string& voter_address,
+                   VoteChoice choice, uint64_t voter_balance, uint64_t current_height) {
+        for (auto& p : proposals) {
+            if (p.id == proposal_id && p.status == ProposalStatus::ACTIVE) {
+                // Check voting period
+                if (current_height > p.vote_end_height) return false;
+                // Must have balance to vote
+                if (voter_balance == 0) return false;
+
+                // Remove previous vote if changing
+                auto prev = p.voters.find(voter_address);
+                if (prev != p.voters.end()) {
+                    // Undo previous vote
+                    switch (prev->second) {
+                        case VoteChoice::APPROVE: p.votes_approve -= voter_balance; break;
+                        case VoteChoice::REJECT:  p.votes_reject -= voter_balance; break;
+                        case VoteChoice::ABSTAIN: p.votes_abstain -= voter_balance; break;
+                    }
+                }
+
+                // Apply new vote (weighted by balance)
+                p.voters[voter_address] = choice;
+                switch (choice) {
+                    case VoteChoice::APPROVE: p.votes_approve += voter_balance; break;
+                    case VoteChoice::REJECT:  p.votes_reject += voter_balance; break;
+                    case VoteChoice::ABSTAIN: p.votes_abstain += voter_balance; break;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Process proposals at each block height
+    void process_height(uint64_t height, uint64_t total_supply) {
+        for (auto& p : proposals) {
+            if (p.status != ProposalStatus::ACTIVE) continue;
+
+            // Voting period ended
+            if (height >= p.vote_end_height) {
+                double approval = p.approval_rate();
+                double participation = p.participation_rate(total_supply);
+
+                if (approval >= gov::APPROVAL_THRESHOLD &&
+                    participation >= gov::PARTICIPATION_MIN) {
+                    p.status = ProposalStatus::PASSED;
+                } else {
+                    if (participation < gov::PARTICIPATION_MIN) {
+                        p.status = ProposalStatus::EXPIRED;
+                    } else {
+                        p.status = ProposalStatus::REJECTED;
+                    }
+                }
+            }
+        }
+
+        // Activate passed proposals at their activation height
+        for (auto& p : proposals) {
+            if (p.status == ProposalStatus::PASSED && height >= p.activation_height) {
+                p.status = ProposalStatus::ACTIVATED;
+                // TODO: Apply param changes to chain state
+            }
+        }
+    }
+
+    // Get proposal by ID
+    Proposal* get_proposal(uint32_t id) {
+        for (auto& p : proposals) {
+            if (p.id == id) return &p;
+        }
+        return nullptr;
+    }
+
+    // Serialize a proposal to JSON
+    std::string proposal_to_json(const Proposal& p, uint64_t total_supply) const {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(2);
+        const char* status_str[] = {"active","passed","rejected","activated","expired"};
+        const char* type_str[] = {"","param_change","crypto_upgrade","fee_change","emission_change","general"};
+
+        ss << "{\"id\":" << p.id
+           << ",\"type\":\"" << type_str[static_cast<int>(p.type)] << "\""
+           << ",\"status\":\"" << status_str[static_cast<int>(p.status)] << "\""
+           << ",\"title\":\"" << p.title << "\""
+           << ",\"description\":\"" << p.description << "\""
+           << ",\"author\":\"" << p.author_address << "\""
+           << ",\"submit_height\":" << p.submit_height
+           << ",\"vote_end_height\":" << p.vote_end_height
+           << ",\"activation_height\":" << p.activation_height
+           << ",\"votes_approve\":" << (p.votes_approve / 1000000.0)
+           << ",\"votes_reject\":" << (p.votes_reject / 1000000.0)
+           << ",\"votes_abstain\":" << (p.votes_abstain / 1000000.0)
+           << ",\"approval_rate\":" << (p.approval_rate() * 100.0)
+           << ",\"participation_rate\":" << (p.participation_rate(total_supply) * 100.0)
+           << ",\"total_voters\":" << p.voters.size();
+
+        if (!p.param_key.empty()) {
+            ss << ",\"param_key\":\"" << p.param_key << "\""
+               << ",\"param_value\":\"" << p.param_value << "\"";
+        }
+        ss << "}";
+        return ss.str();
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════
 //  Mining Loop
 // ═══════════════════════════════════════════════════════════════════
 
@@ -357,6 +566,7 @@ static ChainState* g_chain = nullptr;
 static std::mutex g_chain_mutex;
 static P2PManager* g_p2p = nullptr;
 static std::string* g_miner_addr = nullptr;
+static GovernanceState* g_gov = nullptr;
 
 std::string make_json_response(const std::string& json) {
     return "HTTP/1.1 200 OK\r\n"
@@ -380,23 +590,31 @@ std::string make_404() {
 }
 
 void handle_rpc_client(SOCKET client) {
-    char buf[4096] = {};
+    char buf[8192] = {};
     recv(client, buf, sizeof(buf) - 1, 0);
     std::string req(buf);
 
-    // Parse GET path
-    std::string path;
+    // Parse method and path
+    std::string path, body;
+    bool is_post = false;
     if (req.substr(0, 4) == "GET ") {
         size_t end = req.find(' ', 4);
         if (end != std::string::npos) path = req.substr(4, end - 4);
+    } else if (req.substr(0, 5) == "POST ") {
+        is_post = true;
+        size_t end = req.find(' ', 5);
+        if (end != std::string::npos) path = req.substr(5, end - 5);
+        // Extract body after \r\n\r\n
+        auto body_start = req.find("\r\n\r\n");
+        if (body_start != std::string::npos) body = req.substr(body_start + 4);
     }
 
     // Handle CORS preflight
     if (req.substr(0, 7) == "OPTIONS") {
         std::string resp = "HTTP/1.1 204 No Content\r\n"
                            "Access-Control-Allow-Origin: *\r\n"
-                           "Access-Control-Allow-Methods: GET, OPTIONS\r\n"
-                           "Access-Control-Allow-Headers: *\r\n"
+                           "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
+                           "Access-Control-Allow-Headers: Content-Type, *\r\n"
                            "Connection: close\r\n\r\n";
         send(client, resp.c_str(), static_cast<int>(resp.size()), 0);
         CLOSESOCK(client);
@@ -501,6 +719,132 @@ void handle_rpc_client(SOCKET client) {
               }()
            << ",\"import_token\":\"" << addr << "-miner-" 
            << to_hex(g_chain->tip_hash()).substr(0, 8) << "\""
+           << "}";
+        response = make_json_response(ss.str());
+    }
+    // ─── Governance Endpoints ───
+    else if (path == "/api/v1/governance/proposals") {
+        // List all proposals
+        std::ostringstream ss;
+        ss << "{\"proposals\":[";
+        if (g_gov) {
+            for (size_t i = 0; i < g_gov->proposals.size(); ++i) {
+                if (i > 0) ss << ",";
+                ss << g_gov->proposal_to_json(g_gov->proposals[i], g_chain->total_supply);
+            }
+        }
+        ss << "],\"count\":" << (g_gov ? g_gov->proposals.size() : 0)
+           << ",\"chain_height\":" << g_chain->height()
+           << "}";
+        response = make_json_response(ss.str());
+    }
+    else if (path.substr(0, 30) == "/api/v1/governance/proposal/") {
+        // Get single proposal by ID
+        uint32_t pid = std::stoul(path.substr(30));
+        if (g_gov) {
+            auto* p = g_gov->get_proposal(pid);
+            if (p) {
+                response = make_json_response(g_gov->proposal_to_json(*p, g_chain->total_supply));
+            } else {
+                response = make_json_response("{\"error\":\"Proposal not found\"}");
+            }
+        } else {
+            response = make_json_response("{\"error\":\"Governance not initialized\"}");
+        }
+    }
+    else if (path == "/api/v1/governance/submit" && body.size() > 0) {
+        // Submit a proposal via POST
+        // Expected: {"author":"cert1...","type":"param_change","title":"...","description":"...","param_key":"...","param_value":"..."}
+        // Simple JSON parsing (no library)
+        auto getField = [&](const std::string& key) -> std::string {
+            std::string search = "\"" + key + "\":\"";
+            auto pos = body.find(search);
+            if (pos == std::string::npos) return "";
+            pos += search.size();
+            auto end = body.find("\"", pos);
+            if (end == std::string::npos) return "";
+            return body.substr(pos, end - pos);
+        };
+
+        std::string author = getField("author");
+        std::string type_str = getField("type");
+        std::string title = getField("title");
+        std::string desc = getField("description");
+        std::string pkey = getField("param_key");
+        std::string pval = getField("param_value");
+
+        ProposalType ptype = ProposalType::GENERAL;
+        if (type_str == "param_change") ptype = ProposalType::PARAM_CHANGE;
+        else if (type_str == "crypto_upgrade") ptype = ProposalType::CRYPTO_UPGRADE;
+        else if (type_str == "fee_change") ptype = ProposalType::FEE_CHANGE;
+        else if (type_str == "emission_change") ptype = ProposalType::EMISSION_CHANGE;
+
+        uint64_t author_bal = g_chain->get_balance(author);
+
+        if (g_gov && g_gov->submit_proposal(author, ptype, title, desc,
+                                             g_chain->height(), author_bal, pkey, pval)) {
+            auto* p = g_gov->get_proposal(g_gov->next_id - 1);
+            std::cout << "[GOV] New proposal #" << (g_gov->next_id - 1)
+                      << " by " << author.substr(0, 20) << "...: " << title << "\n";
+            response = make_json_response("{\"ok\":true,\"proposal_id\":" +
+                std::to_string(g_gov->next_id - 1) + "}");
+        } else {
+            response = make_json_response("{\"ok\":false,\"error\":\"Proposal rejected. Need at least ~47,564 Certs balance to propose.\"}");
+        }
+    }
+    else if (path == "/api/v1/governance/vote" && body.size() > 0) {
+        // Cast a vote via POST
+        // Expected: {"proposal_id":1,"voter":"cert1...","choice":"approve"}
+        auto getField = [&](const std::string& key) -> std::string {
+            std::string search = "\"" + key + "\":\"";
+            auto pos = body.find(search);
+            if (pos == std::string::npos) {
+                // Try numeric field
+                search = "\"" + key + "\":";
+                pos = body.find(search);
+                if (pos == std::string::npos) return "";
+                pos += search.size();
+                auto end = body.find_first_of(",}", pos);
+                return body.substr(pos, end - pos);
+            }
+            pos += search.size();
+            auto end = body.find("\"", pos);
+            if (end == std::string::npos) return "";
+            return body.substr(pos, end - pos);
+        };
+
+        uint32_t pid = std::stoul(getField("proposal_id"));
+        std::string voter = getField("voter");
+        std::string choice_str = getField("choice");
+
+        VoteChoice choice = VoteChoice::ABSTAIN;
+        if (choice_str == "approve") choice = VoteChoice::APPROVE;
+        else if (choice_str == "reject") choice = VoteChoice::REJECT;
+
+        uint64_t voter_bal = g_chain->get_balance(voter);
+
+        if (g_gov && g_gov->cast_vote(pid, voter, choice, voter_bal, g_chain->height())) {
+            auto* p = g_gov->get_proposal(pid);
+            std::cout << "[GOV] Vote on #" << pid << " by " << voter.substr(0, 20)
+                      << "... : " << choice_str
+                      << " (power=" << std::fixed << std::setprecision(2) << (voter_bal / 1000000.0) << " Certs)\n";
+            response = make_json_response("{\"ok\":true,\"proposal_id\":" + std::to_string(pid) +
+                ",\"choice\":\"" + choice_str + "\",\"voting_power\":" +
+                std::to_string(voter_bal / 1000000.0) + "}");
+        } else {
+            response = make_json_response("{\"ok\":false,\"error\":\"Vote failed. Check proposal ID, voting period, and balance.\"}");
+        }
+    }
+    else if (path == "/api/v1/governance/config") {
+        // Return governance configuration
+        std::ostringstream ss;
+        ss << "{\"vote_period_blocks\":" << gov::VOTE_PERIOD_BLOCKS
+           << ",\"activation_delay\":" << gov::ACTIVATION_DELAY
+           << ",\"approval_threshold\":" << gov::APPROVAL_THRESHOLD
+           << ",\"participation_min\":" << gov::PARTICIPATION_MIN
+           << ",\"min_proposer_balance\":" << (gov::MIN_PROPOSER_BALANCE / 1000000.0)
+           << ",\"emergency_vote_period\":" << gov::EMERGENCY_VOTE_PERIOD
+           << ",\"emergency_threshold\":" << gov::EMERGENCY_THRESHOLD
            << "}";
         response = make_json_response(ss.str());
     }
@@ -705,6 +1049,8 @@ int main(int argc, char** argv) {
     // Point RPC server at chain state and launch
     g_chain = &chain;
     g_miner_addr = &miner_addr;
+    GovernanceState governance;
+    g_gov = &governance;
     std::thread rpc_thread(rpc_server_thread, rpc_port);
     rpc_thread.detach();
 
@@ -856,6 +1202,9 @@ int main(int argc, char** argv) {
         p2p.broadcast_block(chain.blocks.back());
         p2p.set_chain_info(chain.height(), chain.tip_hash());
 
+        // Process governance votes/activations
+        governance.process_height(chain.height(), chain.total_supply);
+
         ++blocks_mined;
         total_solve_ms += mine_elapsed;
 
@@ -907,6 +1256,7 @@ int main(int argc, char** argv) {
     // ─── Shutdown ───
     p2p.stop();
     g_p2p = nullptr;
+    g_gov = nullptr;
     std::cout << "\n═══════════════════════════════════════════════════════\n";
     std::cout << "  TESTNET STOPPED\n";
     std::cout << "═══════════════════════════════════════════════════════\n\n";
