@@ -9,532 +9,311 @@
 *{margin:0;padding:0;box-sizing:border-box}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1a2035;border-radius:3px}
 body{background:#06080c;color:#c0c8d8;font-family:'JetBrains Mono','Fira Code',monospace;min-height:100vh;display:flex;justify-content:center}
-#app{width:100%;max-width:420px;min-height:100vh;display:flex;flex-direction:column;border-left:1px solid #141a2a;border-right:1px solid #141a2a;position:relative;overflow:hidden}
+#app{width:100%;max-width:460px;min-height:100vh;display:flex;flex-direction:column;border-left:1px solid #141a2a;border-right:1px solid #141a2a;position:relative;overflow:hidden}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #141a2a;background:#080b12}
 .logo{display:flex;align-items:center;gap:10px}
-.hex{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),#0088cc);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#06080c}
+.hex{width:30px;height:30px;background:linear-gradient(135deg,#00e5a0,#0088cc);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#06080c}
 .hex.lg{width:56px;height:56px;font-size:18px}
 .logo-text{font-size:14px;font-weight:600;color:#e0e4f0}
-.net-badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:1px;border:1px solid var(--accent-dim);color:var(--accent);background:var(--accent-bg);cursor:pointer;user-select:none}
-.lock-btn{background:none;border:1px solid #1a2035;border-radius:6px;color:#5a6480;padding:5px 10px;cursor:pointer;font-family:inherit;font-size:11px}
-.lock-btn:hover{border-color:#3a4060;color:#8a90a0}
+.net-badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:1px;border:1px solid #00e5a033;color:#00e5a0;background:#00e5a00a}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-dot.online{background:#00e5a0;box-shadow:0 0 8px #00e5a066}
+.status-dot.offline{background:#ff4444;box-shadow:0 0 8px #ff444466}
 .main{flex:1;overflow-y:auto;padding-bottom:20px}
 .screen-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px}
 .title{font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#e8ecf4;margin-bottom:6px}
-.subtitle{font-size:12px;color:#4a5470;margin-bottom:36px}
+.subtitle{font-size:12px;color:#4a5470;margin-bottom:30px;text-align:center;line-height:1.6}
 .card{margin:0 16px 12px;padding:20px;background:#0c1018;border:1px solid #141a2a;border-radius:12px}
-.card.mt{margin-top:16px}
-input[type=text],input[type=password],input[type=number]{width:100%;padding:12px 14px;background:#0a0e16;border:1px solid #1a2035;border-radius:8px;color:#e0e4f0;font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;transition:border .2s}
-input:focus{border-color:var(--accent)}
+input[type=password]{width:100%;padding:12px 14px;background:#0a0e16;border:1px solid #1a2035;border-radius:8px;color:#e0e4f0;font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;transition:border .2s}
+input:focus{border-color:#00e5a0}
 input::placeholder{color:#2a3050}
-.btn{width:100%;padding:14px;background:var(--accent);color:#06080c;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .2s}
-.btn:hover{opacity:.9}.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-ghost{width:100%;padding:12px;background:transparent;color:#5a6480;border:1px solid #1a2035;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;text-align:left}
+.btn{width:100%;padding:14px;background:#00e5a0;color:#06080c;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .2s}
+.btn:hover{opacity:.9}
+.btn-ghost{width:100%;padding:12px;background:transparent;color:#5a6480;border:1px solid #1a2035;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;text-align:center;margin-top:8px}
 .btn-ghost:hover{border-color:#2a3050;color:#8a90a0}
 .btn-danger{color:#ff6b6b;border-color:#2a1a1a}
 .btn-danger:hover{border-color:#ff6b6b44}
-.actions{display:flex;gap:8px;margin:0 16px 12px}
-.actions .abtn{flex:1;padding:10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;font-family:inherit;border:none;letter-spacing:.5px;transition:all .15s}
-.abtn.active{background:var(--accent);color:#06080c}
-.abtn.inactive{background:#141a2a;color:#6a7490}
-.abtn:hover{opacity:.85}
+.btn-copy{padding:8px 16px;background:#141a2a;color:#00e5a0;border:1px solid #00e5a033;border-radius:6px;font-family:inherit;font-size:11px;cursor:pointer;font-weight:600}
+.btn-copy:hover{background:#1a2535}
+.lock-btn{background:none;border:1px solid #1a2035;border-radius:6px;color:#5a6480;padding:5px 10px;cursor:pointer;font-family:inherit;font-size:11px}
+.lock-btn:hover{border-color:#3a4060;color:#8a90a0}
 .label{font-size:10px;color:#4a5470;margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px}
-.label.mb{margin-bottom:14px}
-.addr{font-size:12px;color:#6a7490;word-break:break-all;line-height:1.6}
+.addr-box{font-size:12px;color:#8a90a0;word-break:break-all;line-height:1.6;background:#0a0e16;padding:12px;border-radius:8px;border:1px solid #1a2035;margin:8px 0}
 .bal-amount{font-family:'Inter',sans-serif;font-size:36px;font-weight:700;color:#e8ecf4;letter-spacing:-1px}
 .bal-sym{font-size:14px;color:#5a6480;margin-left:8px;font-weight:500}
 .detail{font-size:11px;color:#5a6480;line-height:2.2}
 .detail span{color:#8a90a0}
-.detail .hl{color:var(--accent)}
-.error{padding:10px 14px;background:#2a0a0a;border:1px solid #ff4444;border-radius:8px;color:#ff6666;font-size:12px;margin:0 16px 12px}
-.success{padding:10px 14px;background:#0a2a0a;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;margin:0 16px 12px}
-.tx-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #0e1420}
-.tx-row:last-child{border-bottom:none}
-.tx-type{font-size:12px;font-weight:600}.tx-type.send{color:#ff6b6b}.tx-type.recv{color:var(--accent)}
-.tx-addr{font-size:10px;color:#3a4060;margin-top:2px}
-.tx-amt{font-size:13px;font-weight:600}.tx-amt.send{color:#ff6b6b}.tx-amt.recv{color:var(--accent)}
-.tx-date{font-size:10px;color:#3a4060}
-.net-opt{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;margin-bottom:6px;border:1px solid #141a2a;border-radius:8px;cursor:pointer;transition:all .15s}
-.net-opt.active{border-color:var(--accent-dim);background:var(--accent-bg)}
-.net-opt:hover{border-color:#2a3050}
-.net-name{font-size:13px;font-weight:600}.net-name.active{color:var(--accent)}
-.net-detail{font-size:10px;color:#3a4060}
-.net-dot{width:8px;height:8px;border-radius:4px;background:var(--accent)}
-.hint{font-size:10px;color:#3a4060;text-align:center;line-height:1.6;margin-top:12px}
-.qr-placeholder{width:160px;height:160px;margin:0 auto 16px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:16px}
-.addr-box{padding:12px;background:#0a0e16;border-radius:8px;margin-bottom:12px}
-.copy-btn{background:#141a2a;border:none;border-radius:6px;color:#6a7490;padding:8px 14px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;white-space:nowrap;transition:all .2s}
-.copy-btn.copied{background:var(--accent);color:#06080c}
-.info-box{margin-top:12px;padding:14px;background:#0a0e16;border-radius:8px}
-.info-text{font-size:10px;color:#3a4060;line-height:1.8}
-.info-text code{color:#5a6480}
-@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.fadein{animation:fadein .3s ease}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.pulse{animation:pulse 1.5s infinite}
+.detail .hl{color:#00e5a0}
+.mine-cmd{background:#0a0e16;border:1px solid #1a2035;border-radius:8px;padding:12px;font-size:11px;color:#00e5a0;word-break:break-all;line-height:1.6;margin:10px 0;position:relative}
+.mine-cmd .cbtn{position:absolute;top:4px;right:4px;padding:4px 8px;background:#141a2a;border-radius:4px;cursor:pointer;font-size:10px;color:#5a6480;border:none;font-family:inherit}
+.mine-cmd .cbtn:hover{color:#00e5a0}
+.block-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #0f1420;font-size:11px}
+.block-row:last-child{border-bottom:none}
+.block-num{color:#00e5a0;font-weight:600}
+.block-miner{color:#5a6480;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.block-miner.you{color:#00e5a0}
+.error{padding:10px 14px;background:#2a0a0a;border:1px solid #ff4444;border-radius:8px;color:#ff6666;font-size:12px;margin-bottom:12px}
+.fadein{animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.warning-box{margin:16px 0;padding:14px;background:#2a1a00;border:1px solid #f59e0b44;border-radius:8px;font-size:12px;color:#f59e0b;line-height:1.8}
+.step-num{display:inline-block;width:22px;height:22px;background:#f59e0b;color:#06080c;border-radius:50%;text-align:center;line-height:22px;font-weight:700;font-size:11px;margin-right:6px}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
-// ═══════════════════════════════════════════════════════════════
-//  SHA3-256 (Keccak) — matches the NPChain hashing exactly
-// ═══════════════════════════════════════════════════════════════
-const RC=[0x0000000000000001n,0x0000000000008082n,0x800000000000808an,0x8000000080008000n,0x000000000000808bn,0x0000000080000001n,0x8000000080008081n,0x8000000000008009n,0x000000000000008an,0x0000000000000088n,0x0000000080008009n,0x000000008000000an,0x000000008000808bn,0x800000000000008bn,0x8000000000008089n,0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,0x000000000000800an,0x800000008000000an,0x8000000080008081n,0x8000000000008080n,0x0000000080000001n,0x8000000080008008n];
-const ROT=[[0,1,62,28,27],[36,44,6,55,20],[3,10,43,25,39],[41,45,15,21,8],[18,2,61,56,14]];
-const M=(1n<<64n)-1n;
-const rl=(x,n)=>((x<<BigInt(n))|(x>>BigInt(64-n)))&M;
-function kf(s){for(let r=0;r<24;r++){const C=[],D=[],B=[];for(let x=0;x<5;x++)C[x]=s[x]^s[x+5]^s[x+10]^s[x+15]^s[x+20];for(let x=0;x<5;x++)D[x]=C[(x+4)%5]^rl(C[(x+1)%5],1);for(let i=0;i<25;i++)s[i]=(s[i]^D[i%5])&M;for(let x=0;x<5;x++)for(let y=0;y<5;y++)B[y+5*((2*x+3*y)%5)]=rl(s[x+5*y],ROT[y][x]);for(let x=0;x<5;x++)for(let y=0;y< 5;y++)s[x+5*y]=(B[x+5*y]^((~B[(x+1)%5+5*y]&M)&B[(x+2)%5+5*y]))&M;s[0]=(s[0]^RC[r])&M}}
-function sha3(data){const rate=136,st=Array(25).fill(0n);const b=typeof data==='string'?new TextEncoder().encode(data):new Uint8Array(data);let p=0;for(let i=0;i<b.length;i++){st[p>>3]=(st[p>>3]^(BigInt(b[i])<<BigInt((p%8)*8)))&M;p++;if(p===rate){kf(st);p=0}}st[p>>3]=(st[p>>3]^(0x06n<<BigInt((p%8)*8)))&M;st[(rate-1)>>3]=(st[(rate-1)>>3]^(0x80n<<BigInt(((rate-1)%8)*8)))&M;kf(st);const o=new Uint8Array(32);for(let i=0;i<32;i++)o[i]=Number((st[i>>3]>>BigInt((i%8)*8))&0xFFn);return o}
-function toHex(b){return Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('')}
 
 // ═══════════════════════════════════════════════════════════════
-//  Crypto: Key generation, encryption, address derivation
+//  SHA3-256 — matches NPChain hashing
 // ═══════════════════════════════════════════════════════════════
-function genKeypair(){const sk=crypto.getRandomValues(new Uint8Array(64));const pk=sha3(sk);return{pk,sk}}
+var RC=[0x0000000000000001n,0x0000000000008082n,0x800000000000808an,0x8000000080008000n,0x000000000000808bn,0x0000000080000001n,0x8000000080008081n,0x8000000000008009n,0x000000000000008an,0x0000000000000088n,0x0000000080008009n,0x000000008000000an,0x000000008000808bn,0x800000000000008bn,0x8000000000008089n,0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,0x000000000000800an,0x800000008000000an,0x8000000080008081n,0x8000000000008080n,0x0000000080000001n,0x8000000080008008n];
+var ROT=[[0,1,62,28,27],[36,44,6,55,20],[3,10,43,25,39],[41,45,15,21,8],[18,2,61,56,14]];
+var Mk=(1n<<64n)-1n;
+function rl(x,n){return((x<<BigInt(n))|(x>>BigInt(64-n)))&Mk}
+function kf(s){for(var r=0;r<24;r++){var C=[],D=[],B=[];for(var x=0;x<5;x++)C[x]=s[x]^s[x+5]^s[x+10]^s[x+15]^s[x+20];for(x=0;x<5;x++)D[x]=C[(x+4)%5]^rl(C[(x+1)%5],1);for(var i=0;i<25;i++)s[i]=(s[i]^D[i%5])&Mk;for(x=0;x<5;x++)for(var y=0;y<5;y++)B[y+5*((2*x+3*y)%5)]=rl(s[x+5*y],ROT[y][x]);for(x=0;x<5;x++)for(y=0;y<5;y++)s[x+5*y]=(B[x+5*y]^((~B[(x+1)%5+5*y]&Mk)&B[(x+2)%5+5*y]))&Mk;s[0]=(s[0]^RC[r])&Mk}}
+function sha3(data){var rate=136,st=Array(25).fill(0n);var b=typeof data==='string'?new TextEncoder().encode(data):new Uint8Array(data);var p=0;for(var i=0;i<b.length;i++){st[p>>3]=(st[p>>3]^(BigInt(b[i])<<BigInt((p%8)*8)))&Mk;p++;if(p===rate){kf(st);p=0}}st[p>>3]=(st[p>>3]^(0x06n<<BigInt((p%8)*8)))&Mk;st[(rate-1)>>3]=(st[(rate-1)>>3]^(0x80n<<BigInt(((rate-1)%8)*8)))&Mk;kf(st);var o=new Uint8Array(32);for(i=0;i<32;i++)o[i]=Number((st[i>>3]>>BigInt((i%8)*8))&0xFFn);return o}
+function toHex(b){return Array.from(b).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}
+
+// ═══════════════════════════════════════════════════════════════
+//  Crypto: keypair, encryption, address
+// ═══════════════════════════════════════════════════════════════
+function genKeypair(){var sk=crypto.getRandomValues(new Uint8Array(64));var pk=sha3(sk);return{pk:pk,sk:sk}}
 function deriveAddr(pk){return'cert1'+toHex(sha3(pk)).substring(0,40)}
-function deriveKey(pw,salt){const pb=new TextEncoder().encode(pw);const c=new Uint8Array(pb.length+salt.length);c.set(pb);c.set(salt,pb.length);let k=sha3(c);for(let i=0;i<5000;i++){const r=new Uint8Array(36);r.set(k);r[32]=i&0xff;r[33]=(i>>8)&0xff;r[34]=(i>>16)&0xff;r[35]=(i>>24)&0xff;k=sha3(r)}return k}
-function encrypt(sk,pw){const salt=crypto.getRandomValues(new Uint8Array(16));const key=deriveKey(pw,salt);const stream=sha3(key);const enc=new Uint8Array(sk.length);for(let i=0;i<sk.length;i++)enc[i]=sk[i]^stream[i%32];const check=sha3(key);return{salt:toHex(salt),enc:toHex(enc),check:toHex(check)}}
-function decrypt(data,pw){const salt=new Uint8Array(data.salt.match(/.{2}/g).map(b=>parseInt(b,16)));const key=deriveKey(pw,salt);if(toHex(sha3(key))!==data.check)return null;const eb=new Uint8Array(data.enc.match(/.{2}/g).map(b=>parseInt(b,16)));const stream=sha3(key);const sk=new Uint8Array(eb.length);for(let i=0;i<eb.length;i++)sk[i]=eb[i]^stream[i%32];return sk}
+function deriveKey(pw,salt){var pb=new TextEncoder().encode(pw);var c=new Uint8Array(pb.length+salt.length);c.set(pb);c.set(salt,pb.length);var k=sha3(c);for(var i=0;i<5000;i++){var r=new Uint8Array(36);r.set(k);r[32]=i&0xff;r[33]=(i>>8)&0xff;r[34]=(i>>16)&0xff;r[35]=(i>>24)&0xff;k=sha3(r)}return k}
+function encryptKey(sk,pw){var salt=crypto.getRandomValues(new Uint8Array(16));var key=deriveKey(pw,salt);var stream=sha3(key);var enc=new Uint8Array(sk.length);for(var i=0;i<sk.length;i++)enc[i]=sk[i]^stream[i%32];var check=sha3(key);return{salt:toHex(salt),enc:toHex(enc),check:toHex(check)}}
+function decryptKey(data,pw){var salt=new Uint8Array(data.salt.match(/.{2}/g).map(function(b){return parseInt(b,16)}));var key=deriveKey(pw,salt);if(toHex(sha3(key))!==data.check)return null;var eb=new Uint8Array(data.enc.match(/.{2}/g).map(function(b){return parseInt(b,16)}));var stream=sha3(key);var sk=new Uint8Array(eb.length);for(var i=0;i<eb.length;i++)sk[i]=eb[i]^stream[i%32];return sk}
 
 // ═══════════════════════════════════════════════════════════════
-//  Storage: localStorage (works on any server)
+//  Storage
 // ═══════════════════════════════════════════════════════════════
-const LS={
-  save(k,v){try{localStorage.setItem('npc_'+k,JSON.stringify(v))}catch(e){}},
-  load(k){try{const v=localStorage.getItem('npc_'+k);return v?JSON.parse(v):null}catch(e){return null}},
-  del(k){try{localStorage.removeItem('npc_'+k)}catch(e){}}
+var LS={
+  save:function(k,v){try{localStorage.setItem('npc3_'+k,JSON.stringify(v))}catch(e){}},
+  load:function(k){try{var v=localStorage.getItem('npc3_'+k);return v?JSON.parse(v):null}catch(e){return null}},
+  del:function(k){try{localStorage.removeItem('npc3_'+k)}catch(e){}}
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  Networks
-// ═══════════════════════════════════════════════════════════════
-const NETS={
-  testnet:{name:'Testnet',id:'TCR',color:'#00e5a0',port:19333,rpc:'http://localhost:18333',bt:15,reward:'~47,564'},
-  mainnet:{name:'Mainnet',id:'CRT',color:'#f59e0b',port:9333,rpc:'http://localhost:8332',bt:60,reward:'~190,258'}
-};
+var RPC='http://localhost:18333';
+var wallet=null; // {address, pk, encrypted, created}
+var unlocked=false;
+var pw1='',pw2='',pwu='',err='';
+var copied=false,cmdCopied=false,justCreated=false;
+var online=false,balance='0.0000',chainHeight=0,chainDiff=0,chainSupply='0',chainTip='',blocksMined=0,recentBlocks=[];
+var pollTimer=null;
 
-// ═══════════════════════════════════════════════════════════════
-//  App State & Rendering
-// ═══════════════════════════════════════════════════════════════
-let state={
-  screen:'loading',network:'testnet',wallet:null,unlocked:false,
-  tab:'assets',pw:'',pw2:'',err:'',suc:'',sendTo:'',sendAmt:'',
-  sending:false,copied:false,txs:[],
-  balance:'0.0000',balanceBase:0,
-  chainHeight:0,chainDiff:0,chainSupply:0,chainTip:'',chainOnline:false,
-  recentBlocks:[]
-};
-
-let pollTimer=null;
-
-function setState(patch){Object.assign(state,patch);render()}
-
-function net(){return NETS[state.network]}
-
-function startPolling(){
-  if(pollTimer)clearInterval(pollTimer);
-  fetchChainData();
-  pollTimer=setInterval(fetchChainData,3000);
+function fetchData(){
+  if(!wallet||!unlocked)return;
+  fetch(RPC+'/api/v1/balance/'+wallet.address).then(function(r){return r.json()}).then(function(d){balance=(d.balance||0).toFixed(4);online=true;render()}).catch(function(){online=false;render()});
+  fetch(RPC+'/api/v1/status').then(function(r){return r.json()}).then(function(d){chainHeight=d.height||0;chainDiff=d.difficulty||0;chainSupply=(d.total_supply||0).toFixed(2);chainTip=d.tip_hash||'';online=true;render()}).catch(function(){});
+  fetch(RPC+'/api/v1/blocks').then(function(r){return r.json()}).then(function(d){recentBlocks=d.blocks||[];render()}).catch(function(){});
+  fetch(RPC+'/api/v1/miner').then(function(r){return r.json()}).then(function(d){blocksMined=d.blocks_mined||0;render()}).catch(function(){});
 }
-function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+function startPolling(){if(pollTimer)clearInterval(pollTimer);fetchData();pollTimer=setInterval(fetchData,3000)}
+function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}}
 
-function fetchChainData(){
-  if(!state.wallet||!state.unlocked)return;
-  const rpc=net().rpc;
+function h(tag,props){var el=document.createElement(tag);var ch=Array.prototype.slice.call(arguments,2);if(props)Object.keys(props).forEach(function(k){if(k.indexOf('on')===0)el[k]=props[k];else if(k==='className')el.className=props[k];else if(k==='style'&&typeof props[k]==='object')Object.assign(el.style,props[k]);else el.setAttribute(k,props[k])});ch.forEach(function(c){if(Array.isArray(c))c.forEach(function(cc){if(cc!=null)el.append(typeof cc==='string'||typeof cc==='number'?document.createTextNode(String(cc)):cc)});else if(c!=null&&c!==false)el.append(typeof c==='string'||typeof c==='number'?document.createTextNode(String(c)):c)});return el}
 
-  // Fetch balance
-  fetch(rpc+'/api/v1/balance/'+state.wallet.address)
-    .then(r=>r.json())
-    .then(d=>{
-      state.balance=(d.balance||0).toFixed(4);
-      state.balanceBase=d.balance_base||0;
-      state.chainOnline=true;
-      render();
-    })
-    .catch(()=>{state.chainOnline=false;render();});
-
-  // Fetch chain status
-  fetch(rpc+'/api/v1/status')
-    .then(r=>r.json())
-    .then(d=>{
-      state.chainHeight=d.height||0;
-      state.chainDiff=d.difficulty||0;
-      state.chainSupply=(d.total_supply||0).toFixed(2);
-      state.chainTip=d.tip_hash||'';
-      state.chainOnline=true;
-      render();
-    })
-    .catch(()=>{});
-
-  // Fetch recent blocks
-  fetch(rpc+'/api/v1/blocks')
-    .then(r=>r.json())
-    .then(d=>{state.recentBlocks=d.blocks||[];render();})
-    .catch(()=>{});
-}
-
-function init(){
-  const w=LS.load('wallet');
-  if(w){state.wallet=w;state.screen='unlock'}
-  else state.screen='welcome';
-  state.txs=LS.load('txs_'+state.network)||[];
-  render();
-}
-
-function createWallet(){
-  if(state.pw.length<8){setState({err:'Password must be at least 8 characters'});return}
-  if(state.pw!==state.pw2){setState({err:'Passwords do not match'});return}
-  const kp=genKeypair();const addr=deriveAddr(kp.pk);
-  const enc=encrypt(kp.sk,state.pw);
-  const w={address:addr,pk:toHex(kp.pk),enc,created:Date.now()};
-  LS.save('wallet',w);
-  setState({wallet:w,unlocked:true,screen:'dashboard',pw:'',pw2:'',err:''});
-  startPolling();
-
-  // Auto-download wallet JSON for miner use
-  const exportData = {
-    address: addr,
-    public_key: toHex(kp.pk),
-    encrypted_secret_key: enc,
-    created: new Date().toISOString(),
-    network: 'npchain',
-    note: 'Use your address to start mining: npchain_testnet.exe --address ' + addr
-  };
-  const a=document.createElement('a');
-  a.href='data:application/json,'+encodeURIComponent(JSON.stringify(exportData,null,2));
-  a.download='npchain-miner-wallet.json';a.click();
-}
-
-function unlock(){
-  const sk=decrypt(state.wallet.enc,state.pw);
-  if(!sk){setState({err:'Wrong password'});setTimeout(()=>setState({err:''}),3000);return}
-  setState({unlocked:true,screen:'dashboard',pw:'',err:'',txs:LS.load('txs_'+state.network)||[]});
-  startPolling();
-}
-
-function lock(){stopPolling();setState({unlocked:false,screen:'unlock',tab:'assets',balance:'0.0000',chainOnline:false})}
-
-function switchNet(n){
-  state.network=n;state.txs=LS.load('txs_'+n)||[];state.balance='0.0000';state.chainOnline=false;
-  document.documentElement.style.setProperty('--accent',NETS[n].color);
-  document.documentElement.style.setProperty('--accent-dim',NETS[n].color+'33');
-  document.documentElement.style.setProperty('--accent-bg',NETS[n].color+'0a');
-  render();
-  if(state.unlocked)startPolling();
-}
-
-function copyAddr(){
-  navigator.clipboard?.writeText(state.wallet.address);
-  setState({copied:true});setTimeout(()=>setState({copied:false}),2000);
-}
-
-function sendTx(){
-  if(!state.sendTo.startsWith('cert1')||state.sendTo.length<20){setState({err:'Invalid address'});setTimeout(()=>setState({err:''}),3000);return}
-  if(!state.sendAmt||parseFloat(state.sendAmt)<=0){setState({err:'Invalid amount'});setTimeout(()=>setState({err:''}),3000);return}
-  setState({sending:true});
-  setTimeout(()=>{
-    const hash=toHex(sha3(Date.now()+state.sendTo+state.sendAmt));
-    const tx={hash,to:state.sendTo,amount:state.sendAmt,type:'send',ts:Date.now(),status:'confirmed',block:Math.floor(Math.random()*10000)};
-    const txs=[tx,...state.txs].slice(0,50);
-    LS.save('txs_'+state.network,txs);
-    setState({sending:false,sendTo:'',sendAmt:'',txs,suc:'Sent '+state.sendAmt+' Certs',err:''});
-    setTimeout(()=>setState({suc:''}),4000);
-  },1500);
-}
-
-function deleteWallet(){
-  if(!confirm('DELETE WALLET?\n\nThis permanently erases your keys.\nMake sure you have a backup.'))return;
-  LS.del('wallet');LS.del('txs_testnet');LS.del('txs_mainnet');
-  setState({wallet:null,unlocked:false,screen:'welcome',tab:'assets'});
-}
-
-function backupWallet(){
-  const a=document.createElement('a');
-  a.href='data:application/json,'+encodeURIComponent(JSON.stringify(state.wallet,null,2));
-  a.download='npchain-wallet-backup.json';a.click();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Render
-// ═══════════════════════════════════════════════════════════════
-function h(tag,attrs,...children){
-  const el=document.createElement(tag);
-  if(attrs)Object.entries(attrs).forEach(([k,v])=>{
-    if(k==='onclick'||k==='oninput'||k==='onkeydown')el[k]=v;
-    else if(k==='className')el.className=v;
-    else if(k==='style'&&typeof v==='object')Object.assign(el.style,v);
-    else if(k==='value')el.value=v;
-    else if(k==='type'||k==='placeholder'||k==='disabled'||k==='autofocus'||k==='step'||k==='min')el.setAttribute(k,v);
-    else el.setAttribute(k,v);
-  });
-  children.flat().forEach(c=>{if(c!=null)el.append(typeof c==='string'?document.createTextNode(c):c)});
-  return el;
-}
+function copyText(text,which){navigator.clipboard&&navigator.clipboard.writeText(text);if(which==='addr')copied=true;else cmdCopied=true;render();setTimeout(function(){copied=false;cmdCopied=false;render()},2000)}
 
 function render(){
-  const app=document.getElementById('app');
-  const n=net();
-  document.documentElement.style.setProperty('--accent',n.color);
-  document.documentElement.style.setProperty('--accent-dim',n.color+'33');
-  document.documentElement.style.setProperty('--accent-bg',n.color+'0a');
-
+  var app=document.getElementById('app');
   app.innerHTML='';
 
-  // Loading
-  if(state.screen==='loading'){
-    app.append(h('div',{className:'screen-center'},h('div',{className:'hex lg pulse'},'NP')));
-    return;
-  }
-
-  // Welcome
-  if(state.screen==='welcome'){
-    app.append(h('div',{className:'screen-center fadein'},
-      h('div',{className:'hex lg',style:{marginBottom:'20px'}},'NP'),
-      h('div',{className:'title'},'NPChain Wallet'),
-      h('div',{className:'subtitle'},'Post-Quantum • Encrypted • Web3'),
-      h('div',{style:{width:'100%',maxWidth:'340px'}},
-        h('div',{className:'label'},'Create Password'),
-        h('input',{type:'password',placeholder:'Min 8 characters',value:state.pw,oninput:e=>state.pw=e.target.value,onkeydown:e=>{if(e.key==='Enter')document.querySelector('.pw2')?.focus()}}),
-        h('input',{type:'password',placeholder:'Confirm password',className:'pw2',value:state.pw2,oninput:e=>state.pw2=e.target.value,onkeydown:e=>{if(e.key==='Enter')createWallet()}}),
-        state.err?h('div',{className:'error'},state.err):null,
-        h('button',{className:'btn',onclick:createWallet},'Create Wallet'),
-        h('div',{style:{textAlign:'center',padding:'10px 0',color:'#2a3050',fontSize:'11px'}},'— or —'),
-        h('button',{className:'btn-ghost',onclick:function(){
-          var inp=document.createElement('input');inp.type='file';inp.accept='.json';
-          inp.onchange=function(e){
-            var f=e.target.files[0];if(!f)return;
-            var reader=new FileReader();
-            reader.onload=function(ev){
-              try{
-                var data=JSON.parse(ev.target.result);
-                if(!data.address||!data.encrypted||!data.encrypted.check){setState({err:'Invalid wallet export file'});return;}
-                var w={address:data.address,pk:data.publicKey||'',enc:data.encrypted,created:data.created||Date.now()};
-                LS.save('wallet',w);
-                setState({wallet:w,screen:'unlock',err:'',pw:''});
-              }catch(ex){setState({err:'Could not read file: '+ex.message});}
-            };
-            reader.readAsText(f);
-          };
-          inp.click();
-        }},'Import CLI Wallet (.json)'),
-        h('div',{style:{textAlign:'center',padding:'5px 0',color:'#2a3050',fontSize:'11px'}},'— or —'),
-        h('button',{className:'btn-ghost',style:{borderColor:'var(--accent)',color:'var(--accent)'},onclick:function(){
-          var mrpc=net().rpc;
-          fetch(mrpc+'/api/v1/miner').then(r=>r.json()).then(function(data){
-            if(!data.address||data.address.length<20){setState({err:'No miner detected. Is the node running?'});return;}
-            var w={address:data.address,pk:'miner-imported',enc:{check:'miner'},created:Date.now(),miner:true};
-            LS.save('wallet',w);
-            setState({wallet:w,screen:'dashboard',err:'',pw:''});
-          }).catch(function(){setState({err:'Cannot reach node at '+mrpc+'. Is the testnet running?'});});
-        }},'Import from Running Miner'),
-        h('div',{className:'hint'},'Your keys are generated locally and encrypted with your password. NPChain never sees your private keys.')
-      )
-    ));return;
-  }
-
-  // Unlock
-  if(state.screen==='unlock'){
-    app.append(h('div',{className:'screen-center fadein'},
-      h('div',{className:'hex lg',style:{marginBottom:'20px'}},'NP'),
-      h('div',{className:'title'},'Welcome Back'),
-      h('div',{className:'addr',style:{marginBottom:'30px',textAlign:'center'}},state.wallet?.address||''),
-      h('div',{style:{width:'100%',maxWidth:'340px'}},
-        h('input',{type:'password',placeholder:'Enter password',value:state.pw,autofocus:'true',oninput:e=>state.pw=e.target.value,onkeydown:e=>{if(e.key==='Enter')unlock()}}),
-        state.err?h('div',{className:'error'},state.err):null,
-        h('button',{className:'btn',onclick:unlock,style:{marginBottom:'10px'}},'Unlock'),
-        h('button',{className:'btn-ghost btn-danger',onclick:deleteWallet},'Delete Wallet')
-      )
-    ));return;
-  }
-
-  // Dashboard
   // Topbar
+  var lockBtn=null;
+  if(wallet&&unlocked){
+    lockBtn=h('button',{className:'lock-btn',onclick:function(){unlocked=false;stopPolling();online=false;balance='0.0000';render()}},'Lock');
+  }
   app.append(h('div',{className:'topbar'},
-    h('div',{className:'logo'},h('div',{className:'hex'},'NP'),h('span',{className:'logo-text'},'NPChain')),
+    h('div',{className:'logo'},h('div',{className:'hex'},'NP'),h('div',{className:'logo-text'},'NPChain')),
     h('div',{style:{display:'flex',alignItems:'center',gap:'10px'}},
-      h('div',{className:'net-badge',onclick:()=>switchNet(state.network==='testnet'?'mainnet':'testnet')},n.name+' ↻'),
-      h('button',{className:'lock-btn',onclick:lock},'Lock')
+      h('span',{className:'status-dot '+(online?'online':'offline')}),
+      h('span',{className:'net-badge'},'TESTNET'),
+      lockBtn
     )
   ));
 
-  const main=h('div',{className:'main'});
-
-  // Balance card
-  main.append(h('div',{className:'card mt fadein',style:{textAlign:'center',paddingTop:'28px',paddingBottom:'28px'}},
-    h('div',{className:'label'},'Total Balance'),
-    h('div',{},h('span',{className:'bal-amount'},state.balance),h('span',{className:'bal-sym'},'Certs')),
-    h('div',{style:{fontSize:'10px',color:'#3a4060',marginTop:'6px'}},
-      n.name+' • '+n.id+' • ',
-      h('span',{style:{color:state.chainOnline?'var(--accent)':'#ff6b6b'}},state.chainOnline?'● Connected':'○ Offline')
-    ),
-    state.chainOnline?h('div',{style:{fontSize:'9px',color:'#2a3050',marginTop:'4px'}},'Block #'+state.chainHeight+' • Diff '+state.chainDiff+' • Supply '+state.chainSupply+' Certs'):null
-  ));
-
-  // Address row
-  main.append(h('div',{className:'card',style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}},
-    h('div',{style:{flex:1,minWidth:0}},
-      h('div',{className:'label'},'Your Address'),
-      h('div',{className:'addr',style:{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},state.wallet?.address||'')
-    ),
-    h('button',{className:'copy-btn'+(state.copied?' copied':''),onclick:copyAddr},state.copied?'Copied!':'Copy')
-  ));
-
-  // Mining command panel
-  var minerCmd = './npchain_testnet.exe --address ' + (state.wallet?.address||'');
-  main.append(h('div',{className:'card fadein',style:{background:'#0d1117',border:'1px solid #00e5a0',borderRadius:'12px'}},
-    h('div',{className:'label',style:{color:'#00e5a0',marginBottom:'8px',fontWeight:'600'}},'⛏ Start Mining'),
-    h('div',{style:{fontFamily:'JetBrains Mono',fontSize:'11px',color:'#e6edf3',background:'#161b22',padding:'12px',borderRadius:'8px',wordBreak:'break-all',lineHeight:'1.6'}},minerCmd),
-    h('button',{className:'btn',style:{marginTop:'10px',fontSize:'11px',padding:'8px 16px'},onclick:function(){navigator.clipboard?.writeText(minerCmd);this.textContent='Copied!';setTimeout(()=>{this.textContent='Copy Mining Command'},2000)}},'Copy Mining Command'),
-    h('div',{style:{fontSize:'9px',color:'#8b949e',marginTop:'8px'}},'Paste this in your MSYS2 terminal to start mining. Your block rewards go to your address above.')
-  ));
-
-  // Tabs
-  const tabs=['send','receive','activity','settings'];
-  const tabLabels={send:'Send',receive:'Receive',activity:'Activity',settings:'⚙'};
-  main.append(h('div',{className:'actions'},...tabs.map(t=>
-    h('div',{className:'abtn '+(state.tab===t?'active':'inactive'),onclick:()=>setState({tab:t})},tabLabels[t])
-  )));
-
-  // Messages
-  if(state.err)main.append(h('div',{className:'error'},state.err));
-  if(state.suc)main.append(h('div',{className:'success'},state.suc));
-
-  // Tab content
-  if(state.tab==='send'){
-    main.append(h('div',{className:'card fadein'},
-      h('div',{className:'label mb'},'Send Certs'),
-      h('input',{type:'text',placeholder:'Recipient address (cert1...)',value:state.sendTo,oninput:e=>state.sendTo=e.target.value}),
-      h('input',{type:'number',placeholder:'Amount',value:state.sendAmt,step:'0.01',min:'0',oninput:e=>state.sendAmt=e.target.value,onkeydown:e=>{if(e.key==='Enter')sendTx()}}),
-      h('div',{style:{fontSize:'10px',color:'#3a4060',marginBottom:'12px'}},'Network fee: ~0.001 Certs • '+n.name+' ('+n.id+')'),
-      h('button',{className:'btn',onclick:sendTx,disabled:state.sending?'true':null},state.sending?'Sending...':'Send Certs')
-    ));
-  }
-
-  if(state.tab==='receive'){
-    main.append(h('div',{className:'card fadein',style:{textAlign:'center'}},
-      h('div',{className:'label mb'},'Receive Certs'),
-      h('div',{className:'qr-placeholder'},h('div',{style:{width:'100%',height:'100%',background:'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50%/8px 8px',borderRadius:'4px',opacity:.7}})),
-      h('div',{className:'addr-box'},h('div',{className:'addr'},state.wallet?.address||'')),
-      h('button',{className:'btn',style:{fontSize:'12px'},onclick:copyAddr},state.copied?'Copied!':'Copy Address'),
-      h('div',{className:'hint'},'Share this address to receive Certs on '+n.name)
-    ));
-  }
-
-  if(state.tab==='activity'){
-    const txCard=h('div',{className:'card fadein'},h('div',{className:'label mb'},'Transaction History'));
-    if(state.txs.length===0){
-      txCard.append(h('div',{style:{textAlign:'center',padding:'32px',color:'#3a4060',fontSize:'12px'}},'No transactions yet.'));
-    }else{
-      state.txs.forEach(tx=>{
-        txCard.append(h('div',{className:'tx-row'},
-          h('div',{},
-            h('div',{className:'tx-type '+(tx.type==='send'?'send':'recv')},tx.type==='send'?'↑ Sent':'↓ Received'),
-            h('div',{className:'tx-addr'},tx.to?.substring(0,24)+'... • Block #'+tx.block)
-          ),
-          h('div',{style:{textAlign:'right'}},
-            h('div',{className:'tx-amt '+(tx.type==='send'?'send':'recv')},(tx.type==='send'?'-':'+')+tx.amount+' Certs'),
-            h('div',{className:'tx-date'},new Date(tx.ts).toLocaleDateString())
-          )
-        ));
-      });
-    }
-    main.append(txCard);
-  }
-
-  if(state.tab==='settings'){
-    // Network selector
-    const netCard=h('div',{className:'card fadein'},h('div',{className:'label mb'},'Network'));
-    Object.entries(NETS).forEach(([k,v])=>{
-      const active=state.network===k;
-      netCard.append(h('div',{className:'net-opt'+(active?' active':''),onclick:()=>switchNet(k)},
-        h('div',{},
-          h('div',{className:'net-name'+(active?' active':''),style:active?{color:v.color}:{}},v.name),
-          h('div',{className:'net-detail'},'Chain ID: '+v.id+' • '+v.bt+'s blocks • '+v.reward+' Certs/block')
-        ),
-        active?h('div',{className:'net-dot',style:{background:v.color}}):null
-      ));
-    });
-    main.append(netCard);
-
-    // Wallet details
-    main.append(h('div',{className:'card'},
-      h('div',{className:'label mb'},'Wallet Details'),
-      h('div',{className:'detail'},
-        h('div',{},'Address: ',h('span',{},state.wallet?.address||'')),
-        h('div',{},'Public Key: ',h('span',{},(state.wallet?.pk||'').substring(0,32)+'...')),
-        h('div',{},'Signature: ',h('span',{},'CRYSTALS-Dilithium Level 5')),
-        h('div',{},'Encryption: ',h('span',{},'SHA3-256 (5K rounds)')),
-        h('div',{},'Created: ',h('span',{},state.wallet?.created?new Date(state.wallet.created).toLocaleDateString():'—'))
-      )
-    ));
-
-    // Security
-    main.append(h('div',{className:'card'},
-      h('div',{className:'label mb'},'Security'),
-      h('button',{className:'btn-ghost',style:{marginBottom:'8px'},onclick:backupWallet},'↓ Download Wallet Backup'),
-      h('button',{className:'btn-ghost btn-danger',onclick:deleteWallet},'✕ Delete Wallet')
-    ));
-
-    // Chain info
-    main.append(h('div',{className:'card'},
-      h('div',{className:'label mb'},'Chain Info'),
-      h('div',{className:'detail'},
-        h('div',{},'Consensus: ',h('span',{},'Proof-of-NP-Witness (PoNW)')),
-        h('div',{},'Mining: ',h('span',{},'3-SAT, Subset-Sum, Graph Coloring, Hamiltonian')),
-        h('div',{},'Annual Cap: ',h('span',{},'100,000,000,000 Certs/year')),
-        h('div',{},'Supply Cap: ',h('span',{},'Unlimited (declining inflation)')),
-        h('div',{},'Quantum Safety: ',h('span',{className:'hl'},'Dilithium + Kyber (lattice)')),
-        h('div',{},'Privacy: ',h('span',{},'Stealth addresses + confidential TX'))
-      )
-    ));
-  }
-
-  if(state.tab==='assets'){
-    main.append(h('div',{className:'card fadein'},
-      h('div',{className:'label mb'},'Assets'),
-      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 0',borderBottom:'1px solid #0e1420'}},
-        h('div',{style:{display:'flex',alignItems:'center',gap:'12px'}},
-          h('div',{className:'hex'},'NP'),
-          h('div',{},h('div',{style:{fontSize:'14px',fontWeight:600,color:'#e0e4f0'}},'Certs'),h('div',{style:{fontSize:'10px',color:'#4a5470'}},'NPChain • '+n.name))
-        ),
-        h('div',{style:{textAlign:'right'}},
-          h('div',{style:{fontSize:'14px',fontWeight:600,color:parseFloat(state.balance)>0?'var(--accent)':'#e0e4f0'}},state.balance),
-          h('div',{style:{fontSize:'10px',color:'#4a5470'}},'Certs')
-        )
-      ),
-      state.chainOnline?h('div',{style:{padding:'12px 0'}},
-        h('div',{className:'label',style:{marginBottom:'8px'}},'Live Chain'),
-        h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'#5a6480',padding:'4px 0'}},h('span',{},'Height'),h('span',{style:{color:'#8a90a0'}},String(state.chainHeight))),
-        h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'#5a6480',padding:'4px 0'}},h('span',{},'Difficulty'),h('span',{style:{color:'#8a90a0'}},String(state.chainDiff))),
-        h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'#5a6480',padding:'4px 0'}},h('span',{},'Total Supply'),h('span',{style:{color:'#8a90a0'}},state.chainSupply+' Certs')),
-        h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'#5a6480',padding:'4px 0'}},h('span',{},'Tip Hash'),h('span',{style:{color:'#8a90a0'}},(state.chainTip||'').substring(0,20)+'...'))
-      ):null,
-      state.chainOnline&&state.recentBlocks.length>0?h('div',{style:{paddingTop:'8px',borderTop:'1px solid #0e1420'}},
-        h('div',{className:'label',style:{marginBottom:'8px'}},'Recent Blocks'),
-        ...state.recentBlocks.slice(-5).reverse().map(function(b){
-          return h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'10px',color:'#4a5470',padding:'3px 0'}},
-            h('span',{},'#'+b.height),
-            h('span',{style:{color:b.miner===state.wallet.address?'var(--accent)':'#3a4060'}},b.miner===state.wallet.address?'You mined!':b.miner.substring(0,18)+'...'),
-            h('span',{},'+'+b.reward.toFixed(2))
-          );
-        })
-      ):null,
-      !state.chainOnline?h('div',{className:'info-box'},
-        h('div',{className:'info-text'},
-          'Testnet node not detected. Start mining:',h('br'),
-          h('code',{},'./npchain_testnet --address '+((state.wallet&&state.wallet.address)||'cert1...')),h('br'),h('br'),
-          'The wallet auto-connects to ',h('code',{},n.rpc)
-        )
-      ):null
-    ));
-  }
-
+  var main=h('div',{className:'main'});
   app.append(main);
+
+  // ─── WELCOME: CREATE WALLET ───
+  if(!wallet){
+    main.append(h('div',{className:'screen-center fadein'},
+      h('div',{className:'hex lg',style:{marginBottom:'20px'}},'NP'),
+      h('div',{className:'title'},'NPChain Wallet'),
+      h('div',{className:'subtitle'},'Create a password-protected wallet.',h('br'),'You need this address to start mining.'),
+      h('div',{style:{width:'100%',maxWidth:'340px'}},
+        err?h('div',{className:'error'},err):null,
+        h('input',{type:'password',placeholder:'Create password (8+ characters)',oninput:function(e){pw1=e.target.value}}),
+        h('input',{type:'password',placeholder:'Confirm password',oninput:function(e){pw2=e.target.value},onkeydown:function(e){if(e.key==='Enter')doCreate()}}),
+        h('button',{className:'btn',onclick:doCreate},'Create Wallet'),
+        h('div',{style:{height:'12px'}}),
+        h('div',{style:{fontSize:'11px',color:'#3a4060',textAlign:'center',lineHeight:'1.8'}},
+          'Your keys are encrypted with your password.',h('br'),'Nothing leaves your browser. Keep your password safe.'
+        )
+      )
+    ));
+    return;
+  }
+
+  // ─── UNLOCK ───
+  if(!unlocked&&!justCreated){
+    main.append(h('div',{className:'screen-center fadein'},
+      h('div',{className:'hex lg',style:{marginBottom:'20px'}},'NP'),
+      h('div',{className:'title'},'Welcome Back'),
+      h('div',{style:{fontSize:'12px',color:'#5a6480',marginBottom:'30px',textAlign:'center',wordBreak:'break-all'}},wallet.address),
+      h('div',{style:{width:'100%',maxWidth:'340px'}},
+        err?h('div',{className:'error'},err):null,
+        h('input',{type:'password',placeholder:'Enter password',autofocus:'true',oninput:function(e){pwu=e.target.value},onkeydown:function(e){if(e.key==='Enter')doUnlock()}}),
+        h('button',{className:'btn',onclick:doUnlock,style:{marginBottom:'10px'}},'Unlock'),
+        h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')
+      )
+    ));
+    return;
+  }
+
+  // ─── JUST CREATED: SHOW ADDRESS + MINING INSTRUCTIONS ───
+  if(justCreated){
+    var cmd='./npchain_testnet.exe --address '+wallet.address;
+    main.append(h('div',{className:'screen-center fadein'},
+      h('div',{className:'title',style:{color:'#00e5a0',marginBottom:'20px'}},'Wallet Created!'),
+      h('div',{style:{width:'100%',maxWidth:'380px'}},
+        h('div',{className:'label'},'YOUR MINING ADDRESS'),
+        h('div',{className:'addr-box'},wallet.address),
+        h('div',{style:{textAlign:'center',margin:'10px 0'}},
+          h('button',{className:'btn-copy',onclick:function(){copyText(wallet.address,'addr')}},copied?'Copied!':'Copy Address')
+        ),
+        h('div',{className:'warning-box'},
+          h('span',{className:'step-num'},'1'),' Copy your address above',h('br'),
+          h('span',{className:'step-num'},'2'),' Open MSYS2 UCRT64 terminal',h('br'),
+          h('span',{className:'step-num'},'3'),' Paste the mining command below',h('br'),
+          h('span',{className:'step-num'},'4'),' Come back here to see your balance'
+        ),
+        h('div',{className:'label',style:{marginTop:'16px'}},'MINING COMMAND'),
+        h('div',{className:'mine-cmd'},cmd,
+          h('button',{className:'cbtn',onclick:function(){copyText(cmd,'cmd')}},cmdCopied?'Copied!':'Copy')
+        ),
+        h('div',{style:{marginTop:'6px',fontSize:'11px',color:'#4a5470',lineHeight:'1.6'}},
+          'To join the public testnet, add: --seed SEED_IP:19333'
+        ),
+        h('button',{className:'btn',style:{marginTop:'20px'},onclick:function(){
+          justCreated=false;
+          startPolling();
+          render();
+        }},'Go to Dashboard')
+      )
+    ));
+    return;
+  }
+
+  // ─── DASHBOARD ───
+  main.append(h('div',{className:'card',style:{textAlign:'center',paddingTop:'28px',paddingBottom:'28px'}},
+    h('div',{className:'label'},'BALANCE'),
+    h('div',{style:{marginTop:'8px'}},
+      h('span',{className:'bal-amount'},balance),
+      h('span',{className:'bal-sym'},'CERTS')
+    ),
+    h('div',{style:{marginTop:'12px',fontSize:'11px',color:online?'#00e5a0':'#ff6b6b'}},
+      online?'Node connected':'Node offline \u2014 start mining to see balance'
+    )
+  ));
+
+  // Address
+  main.append(h('div',{className:'card'},
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}},
+      h('div',{className:'label',style:{marginBottom:'0'}},'YOUR ADDRESS'),
+      h('button',{className:'btn-copy',onclick:function(){copyText(wallet.address,'addr')}},copied?'Copied!':'Copy')
+    ),
+    h('div',{style:{fontSize:'12px',color:'#8a90a0',wordBreak:'break-all',lineHeight:'1.6'}},wallet.address)
+  ));
+
+  // Mining command
+  var cmd='./npchain_testnet.exe --address '+wallet.address;
+  main.append(h('div',{className:'card'},
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}},
+      h('div',{className:'label',style:{marginBottom:'0'}},'MINING COMMAND'),
+      h('button',{className:'btn-copy',onclick:function(){copyText(cmd,'cmd')}},cmdCopied?'Copied!':'Copy')
+    ),
+    h('div',{style:{fontSize:'11px',color:'#00e5a0',wordBreak:'break-all',lineHeight:'1.6'}},cmd)
+  ));
+
+  // Chain stats
+  if(online){
+    main.append(h('div',{className:'card'},
+      h('div',{className:'label',style:{marginBottom:'12px'}},'CHAIN STATUS'),
+      h('div',{className:'detail'},
+        'Height: ',h('span',{},String(chainHeight)),h('br'),
+        'Difficulty: ',h('span',{},String(chainDiff)),h('br'),
+        'Total Supply: ',h('span',{},chainSupply+' Certs'),h('br'),
+        'Blocks You Mined: ',h('span',{className:'hl'},String(blocksMined)),h('br'),
+        'Tip: ',h('span',{},chainTip?(chainTip.substring(0,24)+'...'):'')
+      )
+    ));
+  }
+
+  // Recent blocks
+  if(recentBlocks.length>0){
+    var rows=recentBlocks.slice(0,15).map(function(b){
+      return h('div',{className:'block-row'},
+        h('span',{className:'block-num'},'#'+b.height),
+        h('span',{className:'block-miner'+(b.miner===wallet.address?' you':'')},
+          b.miner===wallet.address?'You mined!':(b.miner||'').substring(0,20)+'...'
+        ),
+        h('span',{style:{color:'#4a5470',fontSize:'10px'}},(b.reward/1000000).toFixed(0)+' Certs')
+      );
+    });
+    main.append(h('div',{className:'card'},
+      h('div',{className:'label',style:{marginBottom:'12px'}},'RECENT BLOCKS'),
+      rows
+    ));
+  }
+
+  // Delete wallet
+  main.append(h('div',{style:{padding:'20px 16px'}},
+    h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')
+  ));
 }
 
-// Boot
-init();
+// ─── Actions ───
+function doCreate(){
+  err='';
+  if(pw1.length<8){err='Password must be at least 8 characters';render();return}
+  if(pw1!==pw2){err='Passwords do not match';render();return}
+  var kp=genKeypair();
+  var addr=deriveAddr(kp.pk);
+  var encrypted=encryptKey(kp.sk,pw1);
+  wallet={address:addr,pk:toHex(kp.pk),encrypted:encrypted,created:Date.now()};
+  LS.save('wallet',wallet);
+  unlocked=true;
+  justCreated=true;
+  pw1='';pw2='';err='';
+  render();
+}
+
+function doUnlock(){
+  err='';
+  var result=decryptKey(wallet.encrypted,pwu);
+  if(!result){err='Wrong password';render();setTimeout(function(){err='';render()},3000);return}
+  unlocked=true;
+  pwu='';err='';
+  startPolling();
+  render();
+}
+
+function doDelete(){
+  if(!confirm('DELETE WALLET?\n\nThis permanently erases your keys.\nYou will need to create a new address to mine.\nMake sure you have backed up your address.'))return;
+  LS.del('wallet');
+  wallet=null;unlocked=false;justCreated=false;
+  stopPolling();
+  online=false;balance='0.0000';chainHeight=0;blocksMined=0;recentBlocks=[];
+  pw1='';pw2='';pwu='';err='';
+  render();
+}
+
+// ─── Init ───
+wallet=LS.load('wallet');
+if(wallet){unlocked=false;justCreated=false}
+render();
+
 </script>
 </body>
 </html>
