@@ -167,6 +167,10 @@ struct Peer {
     std::atomic<bool> alive{true};
     uint16_t listen_port = 0;
     std::string miner_addr;
+    bool hello_sent = false;
+    bool hello_received = false;
+    uint32_t sync_failures = 0;
+    std::chrono::steady_clock::time_point last_sync_attempt;
 
     void disconnect() {
         alive = false;
@@ -258,6 +262,7 @@ public:
 
         // Send HELLO
         send_hello(peer);
+        peer->hello_sent = true;
 
         // Start receive thread
         peer->recv_thread = std::thread(&P2PManager::peer_recv_loop, this, peer);
@@ -386,19 +391,40 @@ private:
                 if (44 + alen <= len)
                     peer->miner_addr = std::string(reinterpret_cast<const char*>(data + 44), alen);
             }
-            std::cout << "[P2P] Hello from " << peer->address
-                      << " (height=" << peer->chain_height
-                      << ", miner=" << peer->miner_addr.substr(0, 20) << "...)\n";
 
-            // If they have a longer chain, request blocks
-            if (peer->chain_height > local_height_ || (local_height_ == 0 && peer->chain_height >= 0)) {
-                uint64_t from = (local_height_ == 0 && local_tip_ == Hash256{}) ? 0 : local_height_ + 1;
-                std::cout << "[P2P] Peer has longer chain (" << peer->chain_height
-                          << " vs " << local_height_ << "), syncing from #" << from << "...\n";
-                request_blocks(peer, from);
+            // Only log first HELLO or significant height changes
+            if (!peer->hello_received) {
+                std::cout << "[P2P] Hello from " << peer->address
+                          << " (height=" << peer->chain_height
+                          << ", miner=" << peer->miner_addr.substr(0, 20) << "...)\n";
             }
-            // Send our hello back
-            send_hello(peer);
+            peer->hello_received = true;
+
+            // If they have a longer chain, request blocks (with backoff)
+            if (peer->chain_height > local_height_) {
+                auto now = std::chrono::steady_clock::now();
+                auto since_last = std::chrono::duration_cast<std::chrono::seconds>(
+                    now - peer->last_sync_attempt).count();
+
+                // Backoff: wait longer after each failure (1s, 2s, 4s, 8s, max 30s)
+                int backoff = std::min(30, (1 << std::min(peer->sync_failures, 5u)));
+
+                if (since_last >= backoff) {
+                    uint64_t from = (local_height_ == 0 && local_tip_ == Hash256{}) ? 0 : local_height_ + 1;
+                    if (peer->sync_failures == 0) {
+                        std::cout << "[P2P] Peer has longer chain (" << peer->chain_height
+                                  << " vs " << local_height_ << "), syncing from #" << from << "...\n";
+                    }
+                    peer->last_sync_attempt = now;
+                    request_blocks(peer, from);
+                }
+            }
+
+            // Only send HELLO back once
+            if (!peer->hello_sent) {
+                peer->hello_sent = true;
+                send_hello(peer);
+            }
             break;
         }
 
@@ -428,21 +454,46 @@ private:
 
                 Block b;
                 if (wire_to_block(data + pos, blen, b)) {
-                    if (on_new_block_ && on_new_block_(b)) ++accepted;
+                    if (on_new_block_ && on_new_block_(b)) {
+                        ++accepted;
+                        // Update local height after each accepted block
+                        std::lock_guard<std::mutex> lock(peers_mutex_);
+                        if (b.height > local_height_) {
+                            local_height_ = b.height;
+                            local_tip_ = b.hash;
+                        }
+                    }
                 }
                 pos += blen;
             }
-            std::cout << "[P2P] Received " << count << " blocks from "
-                      << peer->address << " (accepted " << accepted << ")\n";
+
+            if (accepted > 0) {
+                std::cout << "[P2P] Synced " << accepted << " block(s) from "
+                          << peer->address << " (chain now at #" << local_height_ << ")\n";
+                peer->sync_failures = 0;  // Reset backoff on success
+            } else if (count > 0) {
+                peer->sync_failures++;
+                if (peer->sync_failures <= 3) {
+                    std::cout << "[P2P] Received " << count << " blocks from "
+                              << peer->address << " (accepted 0, attempt " 
+                              << peer->sync_failures << ")\n";
+                }
+            }
             break;
         }
 
         case MSG_NEW_BLOCK: {
             Block b;
             if (wire_to_block(data, len, b)) {
-                std::cout << "[P2P] New block #" << b.height << " from "
-                          << peer->address << " (miner=" << b.miner_address.substr(0, 20) << "...)\n";
-                if (on_new_block_) on_new_block_(b);
+                if (on_new_block_ && on_new_block_(b)) {
+                    std::lock_guard<std::mutex> lock(peers_mutex_);
+                    if (b.height > local_height_) {
+                        local_height_ = b.height;
+                        local_tip_ = b.hash;
+                    }
+                    std::cout << "  ← Block #" << b.height << " from "
+                              << peer->address << " | miner=" << b.miner_address.substr(0, 20) << "...\n";
+                }
             }
             break;
         }
@@ -535,6 +586,7 @@ private:
 
             // Send HELLO
             send_hello(peer);
+            peer->hello_sent = true;
 
             // Start receive thread
             peer->recv_thread = std::thread(&P2PManager::peer_recv_loop, this, peer);
