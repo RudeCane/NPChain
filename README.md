@@ -2,236 +2,252 @@
 
 **Proof-of-NP-Witness Consensus Blockchain**
 
-NPChain is a novel blockchain where miners solve NP-complete problem instances instead of brute-force hash puzzles. Verification is O(n) — anyone can check a witness instantly, but finding one requires real computational work.
+NPChain is the first blockchain where miners solve NP-complete problem instances — k-SAT, Subset-Sum, Graph Coloring, and Hamiltonian Path — instead of brute-force hash puzzles. Finding a witness is hard. Verifying one is O(n).
+
+- **ASIC-resistant** — problem type rotates every block
+- **Quantum-resilient** — only quadratic speedup via Grover's algorithm
+- **Post-quantum cryptography** — Dilithium signatures, Kyber KEM, SHA3-256
 
 ---
 
-## 🚀 Join the Testnet
+## 🚀 Join the Testnet (5 Minutes)
 
 The NPChain testnet is live. Mine blocks, earn testnet Certs, and help stress-test the network.
 
 ### Requirements
 
-- **Windows** with [MSYS2](https://www.msys2.org/) installed
-- **g++ compiler** — install in MSYS2 UCRT64 terminal:
-  ```bash
-  pacman -S mingw-w64-ucrt-x86_64-gcc
-  ```
+- **Windows PC**
+- **MSYS2** — download from [msys2.org](https://www.msys2.org/) and install
 
-### Step 1: Download
+### Step 1: Install Tools
+
+Open **MSYS2 UCRT64** from your Start menu (not regular CMD/PowerShell), then run:
+
+```bash
+pacman -S mingw-w64-ucrt-x86_64-gcc git mingw-w64-ucrt-x86_64-python
+```
+
+Type `Y` when prompted.
+
+### Step 2: Download NPChain
 
 ```bash
 git clone https://github.com/RudeCane/NPChain.git
 cd NPChain
 ```
 
-### Step 2: Build
-
-Open **MSYS2 UCRT64** terminal and run:
+### Step 3: Build
 
 ```bash
-# Build the testnet node
 g++ -std=c++20 -O2 -pthread -I include -I src \
     src/testnet_node.cpp src/crypto/hash.cpp src/crypto/dilithium.cpp \
     -o npchain_testnet.exe -lws2_32
-
-# Build the wallet
-g++ -std=c++20 -O2 -I include \
-    src/wallet.cpp src/crypto/hash.cpp src/crypto/dilithium.cpp \
-    -o npchain_wallet.exe
 ```
 
-### Step 3: Create Your Wallet
+You'll see two warnings about `memcpy` — ignore them. As long as there are no errors, you're good.
+
+### Step 4: Create Your Wallet
+
+Start the wallet web server:
 
 ```bash
-./npchain_wallet.exe create
+cd web
+python3 -m http.server 8888
 ```
 
-Save your wallet address (`cert1...`) — this is where your mining rewards go.
+Open **http://localhost:8888** in your browser.
 
-### Step 4: Start Mining
+1. **Create a password** (8+ characters) — this protects your wallet
+2. **Copy your `cert1...` address** — this is your mining address
+3. **Copy the mining command** shown on screen
 
-**Solo mining (your own chain):**
+Leave this browser tab open — it will show your balance once mining starts.
+
+### Step 5: Start Mining
+
+Open a **second MSYS2 UCRT64 terminal** and paste your mining command:
+
 ```bash
-./npchain_testnet.exe --address cert1YOUR_ADDRESS
+cd NPChain
+./npchain_testnet.exe --address cert1YOUR_ADDRESS_HERE
 ```
 
-**Join the public testnet (connect to seed node):**
+To join the public testnet with other miners, add the seed node:
+
 ```bash
-./npchain_testnet.exe --address cert1YOUR_ADDRESS --seed SEED_IP:19333
+./npchain_testnet.exe --address cert1YOUR_ADDRESS_HERE --seed 47.197.198.200:19333
 ```
 
-> The current seed node IP will be posted in [Discussions](https://github.com/RudeCane/NPChain/discussions) and updated regularly.
+### Step 6: Watch Your Certs Grow
 
-### Step 5: Verify It Works
+Go back to **http://localhost:8888** in your browser. You should see:
 
-You should see output like:
-```
-[GENESIS] Block #0 mined
-[GENESIS] Hash: 9f50b9aa...
-[GENESIS] Reward: 47564.6880 Certs
+- **Balance** increasing with each block you mine
+- **Chain Status** — height, difficulty, total supply
+- **Recent Blocks** — highlights blocks you mined
+- **Node connected** status indicator (green dot)
 
-  ✓ Block #1 | 10 vars | 0ms | diff=1 | reward=47564.69 Certs
-  ✓ Block #2 | 10 vars | 0ms | diff=1 | reward=47564.69 Certs
-```
-
-Check your balance at: `http://localhost:18333/api/v1/balance/cert1YOUR_ADDRESS`
+Each block earns **~47,564 Certs**.
 
 ---
 
 ## How It Works
 
-Each block's previous hash seeds a SHAKE-256 PRNG that deterministically generates an NP-complete problem instance. The problem type rotates every block:
+Every block's previous hash seeds a SHAKE-256 PRNG that generates an NP-complete problem instance:
 
-| `H mod 4` | Problem Type | What the Miner Solves |
-|------------|-------------|----------------------|
-| 0 | k-SAT | Boolean satisfiability |
-| 1 | Subset-Sum | Find subset summing to target |
-| 2 | Graph Coloring | Color vertices with k colors |
-| 3 | Hamiltonian Path | Find path visiting all vertices |
+| Block Hash mod 4 | Problem Type | What the Miner Solves |
+|-------------------|-------------|----------------------|
+| 0 | **k-SAT** | Boolean satisfiability |
+| 1 | **Subset-Sum** | Find subset summing to target |
+| 2 | **Graph Coloring** | Color vertices with k colors |
+| 3 | **Hamiltonian Path** | Find path visiting all vertices |
 
-**Why this matters:**
-- **ASIC-resistant** — the problem mutates every block, no fixed circuit can dominate
-- **Quantum-resilient** — only quadratic speedup via Grover's algorithm
-- **Useful work** — solving NP-complete instances has real-world applications
+The miner finds a valid witness (solution). Every other node verifies it in O(n). No ASICs can dominate because the problem changes every block.
 
-## Cryptographic Stack (Post-Quantum)
+## Cryptographic Stack
 
-- **Signatures:** CRYSTALS-Dilithium Level 5
-- **KEM:** CRYSTALS-Kyber-1024
-- **Hashing:** SHA3-256 (blocks), SHAKE-256 (PRNG), BLAKE3 (integrity)
-
-## CLI Reference
-
-### Testnet Node
-
-```
-npchain_testnet.exe [options]
-
-Options:
-  --address <cert1...>     Miner reward address (required)
-  --p2p-port <port>        P2P listen port (default: 19333)
-  --rpc-port <port>        RPC/HTTP port (default: 18333)
-  --seed <host:port>       Seed node to connect to (repeatable)
-  --fast                   No inter-block delays
-  --block-time <seconds>   Target block time (default: 15)
-  --blocks <N>             Stop after N blocks
-
-Examples:
-  # Solo mining
-  ./npchain_testnet.exe --address cert1abc123...
-
-  # Connect to seed node
-  ./npchain_testnet.exe --address cert1abc123... --seed 203.0.113.50:19333
-
-  # Run two nodes locally
-  ./npchain_testnet.exe --address cert1ALICE --p2p-port 19333
-  ./npchain_testnet.exe --address cert1BOB --p2p-port 19334 --rpc-port 18334 --seed 127.0.0.1:19333
-```
-
-### Wallet
-
-```
-npchain_wallet.exe <command>
-
-Commands:
-  create       Generate a new wallet (Dilithium keypair)
-  info         Show wallet address and public key
-  balance      Check balance via RPC (node must be running)
-  export-web   Export wallet for the browser wallet
-```
-
-## RPC Endpoints
-
-The node runs an HTTP/JSON API on port 18333:
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/v1/status` | Chain height, difficulty, supply, peers, version |
-| `GET /api/v1/blocks` | Recent blocks with full details |
-| `GET /api/v1/balance/<address>` | Balance for any address |
-| `GET /api/v1/peers` | Connected peer list |
-
-## Web Wallet & Block Explorer
-
-A browser-based wallet and Etherscan-style block explorer are in the `web/` folder.
-
-```bash
-cd web
-python -c "import http.server; s=http.server.HTTPServer(('0.0.0.0',8888),http.server.SimpleHTTPRequestHandler); print('http://localhost:8888'); s.serve_forever()"
-```
-
-- **http://localhost:8888** — Wallet (create address, check balance, import CLI wallet)
-- **http://localhost:8888/explorer.html** — Block explorer (live chain view)
-
-## P2P Networking
-
-Nodes communicate over a binary TCP protocol:
-
-| Message | ID | Purpose |
-|---------|----|---------|
-| HELLO | 0x01 | Handshake — exchange height, hash, port |
-| GET_BLOCKS | 0x02 | Request blocks from height N |
-| BLOCKS | 0x03 | Response with block array |
-| NEW_BLOCK | 0x04 | Broadcast freshly mined block |
-| PING/PONG | 0x05/0x06 | Keepalive |
-
-When a new node connects with `--seed`, it syncs the full chain from the seed, then both nodes mine competitively and broadcast new blocks to each other.
+| Layer | Algorithm | Purpose |
+|-------|-----------|---------|
+| Signatures | CRYSTALS-Dilithium Level 5 | Post-quantum digital signatures |
+| Key Exchange | CRYSTALS-Kyber-1024 | Post-quantum key encapsulation |
+| Block Hashing | SHA3-256 | Block integrity |
+| PRNG | SHAKE-256 | Deterministic instance generation |
+| Fast Hashing | BLAKE3 | Data integrity checks |
 
 ## Testnet Parameters
 
 | Parameter | Value |
 |-----------|-------|
-| Chain ID | TCR (0x544352) |
+| Coin | **Certs** |
+| Chain ID | TCR |
 | Block time | 15 seconds |
 | Block reward | ~47,564 Certs |
-| Annual emission | 100B Certs |
+| Annual emission | 100 billion Certs |
 | P2P port | 19333 |
 | RPC port | 18333 |
-| Difficulty window | 36 blocks |
+| Difficulty adjustment | Every 36 blocks |
 
-## Economics
+## CLI Reference
 
-- **Coin:** Certs
-- **Annual emission cap:** 100,000,000,000 Certs/year (hard ceiling)
-- **Base units:** 1,000,000 per Cert (6 decimal places)
-- **No halving, no hard supply cap**
-- **EIP-1559 fee burn** for deflationary pressure
+```
+./npchain_testnet.exe [options]
+
+Required:
+  --address <cert1...>     Your wallet address (create in web wallet first)
+
+Optional:
+  --seed <host:port>       Connect to a seed node (join public testnet)
+  --p2p-port <port>        P2P listen port (default: 19333)
+  --rpc-port <port>        RPC/HTTP port (default: 18333)
+  --block-time <seconds>   Target block time (default: 15)
+  --blocks <N>             Stop after N blocks (0 = unlimited)
+  --fast                   No delays between blocks (testing only)
+  --help                   Show all options
+```
+
+**Examples:**
+
+```bash
+# Solo mining (your own chain)
+./npchain_testnet.exe --address cert1abc123...
+
+# Join the public testnet
+./npchain_testnet.exe --address cert1abc123... --seed 47.197.198.200:19333
+
+# Run your own seed node
+./npchain_testnet.exe --address cert1abc123... --p2p-port 19333
+
+# Connect a second local node
+./npchain_testnet.exe --address cert1def456... --p2p-port 19334 --rpc-port 18334 --seed 127.0.0.1:19333
+```
+
+## RPC API
+
+Your node runs an HTTP API on port 18333:
+
+| Endpoint | Returns |
+|----------|---------|
+| `GET /api/v1/status` | Chain height, difficulty, supply, peers, version |
+| `GET /api/v1/blocks` | Recent blocks with miner, reward, hash |
+| `GET /api/v1/balance/<address>` | Balance for any cert1... address |
+| `GET /api/v1/peers` | Connected peer list |
+| `GET /api/v1/miner` | Current miner address, balance, blocks mined |
+
+**Example:**
+```bash
+curl http://localhost:18333/api/v1/status
+```
+
+## Web Wallet & Explorer
+
+The `web/` folder contains a browser-based wallet and block explorer.
+
+**Wallet** — create address, view balance, copy mining commands
+**Explorer** — browse blocks, see all miners, track chain growth
+
+```bash
+cd web
+python3 -m http.server 8888
+# Open http://localhost:8888
+```
+
+## P2P Networking
+
+Nodes communicate over a binary TCP protocol:
+
+| Message | Purpose |
+|---------|---------|
+| HELLO | Exchange chain height, hash, miner address |
+| GET_BLOCKS | Request blocks from a specific height |
+| BLOCKS | Send requested blocks |
+| NEW_BLOCK | Broadcast a freshly mined block |
+| PING/PONG | Keepalive |
+
+When you connect with `--seed`, your node syncs the full chain from the seed, then both nodes mine competitively and share new blocks in real-time.
 
 ## Project Structure
 
 ```
 NPChain/
 ├── src/
-│   ├── testnet_node.cpp     # Complete testnet node (mining + RPC + P2P)
+│   ├── testnet_node.cpp     # Testnet node (mining + RPC + P2P)
+│   ├── mainnet_node.cpp     # Mainnet node (60s blocks, production params)
 │   ├── p2p.hpp              # P2P networking module
-│   ├── wallet.cpp           # CLI wallet
+│   ├── wallet.cpp           # CLI wallet (optional)
 │   ├── chain_validator.cpp  # Consensus test suite (26/26 passing)
 │   └── crypto/              # SHA3-256, Dilithium stubs
 ├── include/                 # Headers (consensus, crypto, mining, etc.)
-├── web/                     # Browser wallet & block explorer
-├── deploy/                  # Docker shield (8-proxy production architecture)
+├── web/
+│   ├── index.html           # Browser wallet (create address, view balance)
+│   └── explorer.html        # Block explorer
+├── deploy/                  # Docker 8-proxy shield (production)
 └── docs/                    # Architecture documentation
 ```
 
-## Running the Validator
+## Economics
 
-Verify the consensus engine is working correctly:
+- **100 billion Certs per year** — hard emission cap
+- **No halving** — predictable, stable emission forever
+- **EIP-1559 fee burn** — creates deflationary pressure as usage grows
+- **6 decimal places** — 1,000,000 base units per Cert
 
-```bash
-g++ -std=c++20 -O2 -pthread -I include \
-    src/chain_validator.cpp src/crypto/hash.cpp src/crypto/dilithium.cpp \
-    -o npchain_validator.exe
+## Troubleshooting
 
-./npchain_validator.exe
-# Expected: 26/26 tests passing
-```
+**"No wallet address provided"** — Create a wallet first at `http://localhost:8888`, then copy your address into the mining command.
+
+**"Failed to connect to seed"** — Make sure the seed node is running. Try `curl http://SEED_IP:18333/api/v1/status` to verify.
+
+**Wallet shows "Node offline"** — Make sure your node is running in another terminal. The wallet needs the node's RPC on port 18333.
+
+**Wallet won't load in browser** — Don't open index.html directly. Serve it: `python3 -m http.server 8888`, then go to `http://localhost:8888`.
+
+**Build warnings about memcpy** — These are harmless warnings from the Dilithium stub. Ignore them.
+
+## Links
+
+- **GitHub:** [github.com/RudeCane/NPChain](https://github.com/RudeCane/NPChain)
+- **Documentation:** [NPChain GitBook](https://rudecane.gitbook.io/npchain)
 
 ## License
 
 MIT
-
-## Links
-
-- **Documentation:** [NPChain GitBook](https://rudecane.gitbook.io/npchain)
-- **GitHub:** [github.com/RudeCane/NPChain](https://github.com/RudeCane/NPChain)
