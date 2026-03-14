@@ -624,23 +624,34 @@ int main(int argc, char** argv) {
     ╚═══════════════════════════════════════════════════════╝
 )" << '\n';
 
-    // Miner identity
+    // Miner identity — WALLET FIRST: must create wallet before mining
     std::string miner_addr;
     if (!custom_address.empty()) {
         if (custom_address.substr(0, 5) != "cert1" || custom_address.size() < 20) {
-            std::cerr << "FATAL: Invalid address. Must start with cert1...\n";
+            std::cerr << "ERROR: Invalid address format. Must start with 'cert1' and be at least 20 characters.\n";
             return 1;
         }
         miner_addr = custom_address;
         std::cout << "[INIT] Using wallet address: " << miner_addr << "\n";
     } else {
-        std::cout << "[INIT] No --address provided, generating temporary keypair...\n";
-        std::cout << "[INIT] TIP: Use --address cert1... to mine to your wallet\n";
-        auto kp = dilithium_keygen();
-        if (!kp.ok()) { std::cerr << "FATAL: " << kp.error << '\n'; return 1; }
-        auto addr = derive_address(ByteSpan{kp.get().public_key.data(), kp.get().public_key.size()});
-        miner_addr = addr.to_bech32();
-        std::cout << "[INIT] Miner: " << miner_addr << "\n";
+        std::cerr << "\n";
+        std::cerr << "  ╔═══════════════════════════════════════════════════════════╗\n";
+        std::cerr << "  ║  ERROR: No wallet address provided!                       ║\n";
+        std::cerr << "  ║                                                           ║\n";
+        std::cerr << "  ║  You must create a wallet BEFORE mining.                  ║\n";
+        std::cerr << "  ║                                                           ║\n";
+        std::cerr << "  ║  Step 1: Open the NPChain Web Wallet                     ║\n";
+        std::cerr << "  ║          (web/index.html in your NPChain folder)          ║\n";
+        std::cerr << "  ║                                                           ║\n";
+        std::cerr << "  ║  Step 2: Create a password-protected wallet               ║\n";
+        std::cerr << "  ║                                                           ║\n";
+        std::cerr << "  ║  Step 3: Copy your cert1... address                       ║\n";
+        std::cerr << "  ║                                                           ║\n";
+        std::cerr << "  ║  Step 4: Run the miner with your address:                 ║\n";
+        std::cerr << "  ║    ./npchain_testnet --address cert1YOUR_ADDRESS           ║\n";
+        std::cerr << "  ║                                                           ║\n";
+        std::cerr << "  ╚═══════════════════════════════════════════════════════════╝\n\n";
+        return 1;
     }
 
     // Initialize chain
