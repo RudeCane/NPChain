@@ -506,6 +506,43 @@ struct GovernanceState {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+//  Anti-Sybil Protection
+// ═══════════════════════════════════════════════════════════════════
+
+namespace sybil {
+    // 1. Max consecutive blocks by same miner
+    constexpr uint32_t MAX_CONSECUTIVE_BLOCKS = 5;
+
+    // 2. Minimum stake to mine (must have mined at least 1 block or hold Certs)
+    //    Set to 0 for testnet to allow new miners to join
+    //    On mainnet this would be higher
+    constexpr uint64_t MIN_STAKE_TO_MINE = 0;
+
+    // 3. Max connections per IP
+    constexpr uint32_t MAX_PEERS_PER_IP = 2;
+
+    // Check if a miner has hit the consecutive block limit
+    bool check_consecutive(const std::vector<Block>& blocks, const std::string& miner_addr) {
+        if (blocks.size() < MAX_CONSECUTIVE_BLOCKS) return true;
+        uint32_t consecutive = 0;
+        for (size_t i = blocks.size(); i > 0 && consecutive < MAX_CONSECUTIVE_BLOCKS; --i) {
+            if (blocks[i - 1].miner_address == miner_addr) {
+                consecutive++;
+            } else {
+                break;
+            }
+        }
+        return consecutive < MAX_CONSECUTIVE_BLOCKS;
+    }
+
+    // Check if miner has sufficient stake
+    bool check_stake(const ChainState& chain, const std::string& miner_addr) {
+        if (MIN_STAKE_TO_MINE == 0) return true;
+        return chain.get_balance(miner_addr) >= MIN_STAKE_TO_MINE;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  Mining Loop
 // ═══════════════════════════════════════════════════════════════════
 
@@ -1083,6 +1120,22 @@ int main(int argc, char** argv) {
             if (b.height != chain.height() + 1) return false;
             if (b.prev_hash != chain.tip_hash()) return false;
 
+            // Anti-sybil: check consecutive block limit
+            if (!sybil::check_consecutive(chain.blocks, b.miner_address)) {
+                std::cout << "[SYBIL] REJECTED block #" << b.height
+                          << " — miner " << b.miner_address.substr(0, 20)
+                          << "... hit " << sybil::MAX_CONSECUTIVE_BLOCKS << " consecutive block limit\n";
+                return false;
+            }
+
+            // Anti-sybil: check minimum stake
+            if (!sybil::check_stake(chain, b.miner_address)) {
+                std::cout << "[SYBIL] REJECTED block #" << b.height
+                          << " — miner " << b.miner_address.substr(0, 20)
+                          << "... insufficient stake\n";
+                return false;
+            }
+
             auto inst = generate_instance(b.prev_hash, b.difficulty);
             if (!inst.verify(b.witness)) {
                 std::cout << "[P2P] REJECTED block #" << b.height << " — invalid witness\n";
@@ -1165,6 +1218,14 @@ int main(int argc, char** argv) {
 
     while (!g_shutdown) {
         if (max_blocks > 0 && blocks_mined >= max_blocks) break;
+
+        // Anti-sybil: if we've hit consecutive block limit, wait for a peer block
+        if (!sybil::check_consecutive(chain.blocks, miner_addr)) {
+            std::cout << "  [~] Consecutive block limit reached (" << sybil::MAX_CONSECUTIVE_BLOCKS
+                      << "), waiting for other miners...\n";
+            std::this_thread::sleep_for(std::chrono::seconds(target_block_time));
+            continue;
+        }
 
         auto mine_start = std::chrono::steady_clock::now();
 

@@ -306,6 +306,7 @@ public:
 private:
     uint16_t listen_port_;
     std::string miner_addr_;
+    uint32_t max_peers_per_ip_ = 2;  // Anti-sybil: max connections per IP
     SOCKET listener_sock_ = INVALID_SOCKET;
     std::atomic<bool> running_{false};
     std::thread listener_thread_;
@@ -579,10 +580,26 @@ private:
             char ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &client_addr.sin_addr, ip, sizeof(ip));
             uint16_t client_port = ntohs(client_addr.sin_port);
+            std::string client_ip(ip);
+
+            // Anti-sybil: limit connections per IP
+            {
+                std::lock_guard<std::mutex> lock(peers_mutex_);
+                uint32_t ip_count = 0;
+                for (auto& p : peers_) {
+                    if (p->alive && p->address.find(client_ip) == 0) ip_count++;
+                }
+                if (ip_count >= max_peers_per_ip_) {
+                    std::cout << "[P2P] REJECTED connection from " << client_ip
+                              << " (max " << max_peers_per_ip_ << " per IP)\n";
+                    CLOSESOCK(client);
+                    continue;
+                }
+            }
 
             auto peer = std::make_shared<Peer>();
             peer->sock = client;
-            peer->address = std::string(ip) + ":" + std::to_string(client_port);
+            peer->address = client_ip + ":" + std::to_string(client_port);
 
             // Send HELLO
             send_hello(peer);
