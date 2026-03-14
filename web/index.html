@@ -320,12 +320,13 @@ function render(){
         }},'Import CLI Wallet (.json)'),
         h('div',{style:{textAlign:'center',padding:'5px 0',color:'#2a3050',fontSize:'11px'}},'— or —'),
         h('button',{className:'btn-ghost',style:{borderColor:'var(--accent)',color:'var(--accent)'},onclick:function(){
-          fetch(rpc+'/api/v1/miner').then(r=>r.json()).then(function(data){
+          var mrpc=net().rpc;
+          fetch(mrpc+'/api/v1/miner').then(r=>r.json()).then(function(data){
             if(!data.address||data.address.length<20){setState({err:'No miner detected. Is the node running?'});return;}
             var w={address:data.address,pk:'miner-imported',enc:{check:'miner'},created:Date.now(),miner:true};
             LS.save('wallet',w);
             setState({wallet:w,screen:'dashboard',err:'',pw:''});
-          }).catch(function(){setState({err:'Cannot reach node at '+rpc+'. Is the testnet running?'});});
+          }).catch(function(){setState({err:'Cannot reach node at '+mrpc+'. Is the testnet running?'});});
         }},'Import from Running Miner'),
         h('div',{className:'hint'},'Your keys are generated locally and encrypted with your password. NPChain never sees your private keys.')
       )
