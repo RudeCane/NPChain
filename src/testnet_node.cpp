@@ -893,6 +893,212 @@ struct MigrationState {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+//  NP Marketplace — Companies Submit Problems, Miners Solve for Certs
+// ═══════════════════════════════════════════════════════════════════
+
+enum class JobStatus : uint8_t {
+    OPEN       = 0,  // Accepting solutions
+    SOLVING    = 1,  // At least one solution submitted
+    COMPLETED  = 2,  // Deadline passed, winner selected
+    EXPIRED    = 3,  // Deadline passed, no solutions
+    CANCELLED  = 4,  // Submitter cancelled
+};
+
+enum class JobType : uint8_t {
+    ROUTING       = 1,  // Vehicle routing / TSP / Hamiltonian
+    SCHEDULING    = 2,  // Job-shop scheduling / Graph Coloring
+    PACKING       = 3,  // Bin packing / Subset-Sum
+    SAT_CUSTOM    = 4,  // Custom SAT instance
+    AI_VERIFY     = 5,  // AI model verification
+    GENERAL       = 6,  // General optimization
+};
+
+struct MarketplaceSolution {
+    std::string solver_address;   // cert1... of miner who solved
+    uint64_t submit_height;
+    double quality_score;         // Lower = better for minimization
+    std::string solution_hash;    // SHA3 of solution data
+    std::string solution_data;    // The actual solution (JSON)
+};
+
+struct MarketplaceJob {
+    uint32_t id;
+    JobType type;
+    JobStatus status = JobStatus::OPEN;
+    std::string title;
+    std::string description;
+    std::string submitter;        // cert1... who posted the job
+    
+    // Problem definition
+    std::string problem_data;     // JSON: nodes, distances, constraints
+    uint32_t problem_size;        // Nodes/variables/items count
+    std::string optimize;         // "minimize_distance", "minimize_time", etc.
+    
+    // Bounty & timing
+    uint64_t bounty;              // In base units (Certs × 1M)
+    uint64_t submit_height;
+    uint64_t deadline_height;     // Solutions accepted until this height
+    
+    // Solutions
+    std::vector<MarketplaceSolution> solutions;
+    std::string winner_address;
+    
+    // Get best solution
+    MarketplaceSolution* best_solution() {
+        if (solutions.empty()) return nullptr;
+        MarketplaceSolution* best = &solutions[0];
+        for (auto& s : solutions) {
+            if (s.quality_score < best->quality_score) best = &s;
+        }
+        return best;
+    }
+};
+
+struct MarketplaceState {
+    std::vector<MarketplaceJob> jobs;
+    uint32_t next_id = 1;
+    uint64_t total_bounties_paid = 0;
+    uint64_t total_jobs_completed = 0;
+    
+    // Submit a new job
+    bool submit_job(const std::string& submitter, JobType type,
+                    const std::string& title, const std::string& desc,
+                    const std::string& problem_data, uint32_t problem_size,
+                    const std::string& optimize, uint64_t bounty,
+                    uint64_t current_height, uint64_t deadline_blocks,
+                    uint64_t submitter_balance) {
+        // Must have balance to cover bounty
+        if (submitter_balance < bounty) return false;
+        if (title.empty() || title.size() > 200) return false;
+        if (bounty < 1000000) return false;  // Min 1 Cert bounty
+        
+        MarketplaceJob job;
+        job.id = next_id++;
+        job.type = type;
+        job.status = JobStatus::OPEN;
+        job.title = title;
+        job.description = desc;
+        job.submitter = submitter;
+        job.problem_data = problem_data;
+        job.problem_size = problem_size;
+        job.optimize = optimize;
+        job.bounty = bounty;
+        job.submit_height = current_height;
+        job.deadline_height = current_height + deadline_blocks;
+        
+        jobs.push_back(std::move(job));
+        return true;
+    }
+    
+    // Submit a solution to a job
+    bool submit_solution(uint32_t job_id, const std::string& solver,
+                         double quality_score, const std::string& solution_data,
+                         uint64_t current_height) {
+        for (auto& j : jobs) {
+            if (j.id == job_id && (j.status == JobStatus::OPEN || j.status == JobStatus::SOLVING)) {
+                if (current_height > j.deadline_height) return false;
+                
+                MarketplaceSolution sol;
+                sol.solver_address = solver;
+                sol.submit_height = current_height;
+                sol.quality_score = quality_score;
+                sol.solution_data = solution_data;
+                
+                // Hash the solution
+                auto h = sha3_256(ByteSpan{
+                    reinterpret_cast<const uint8_t*>(solution_data.c_str()),
+                    solution_data.size()});
+                sol.solution_hash = to_hex(h).substr(0, 16);
+                
+                j.solutions.push_back(std::move(sol));
+                j.status = JobStatus::SOLVING;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // Process jobs at each block (check deadlines, award bounties)
+    void process_height(uint64_t height, std::map<std::string, uint64_t>& balances) {
+        for (auto& j : jobs) {
+            if (j.status != JobStatus::OPEN && j.status != JobStatus::SOLVING) continue;
+            
+            if (height >= j.deadline_height) {
+                if (j.solutions.empty()) {
+                    j.status = JobStatus::EXPIRED;
+                    // Refund bounty to submitter
+                    balances[j.submitter] += j.bounty;
+                } else {
+                    j.status = JobStatus::COMPLETED;
+                    // Award bounty to best solver
+                    auto* best = j.best_solution();
+                    if (best) {
+                        j.winner_address = best->solver_address;
+                        balances[best->solver_address] += j.bounty;
+                        total_bounties_paid += j.bounty;
+                        total_jobs_completed++;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Get job by ID
+    MarketplaceJob* get_job(uint32_t id) {
+        for (auto& j : jobs) {
+            if (j.id == id) return &j;
+        }
+        return nullptr;
+    }
+    
+    // Job to JSON
+    std::string job_to_json(const MarketplaceJob& j, uint64_t current_height) const {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(4);
+        const char* status_str[] = {"open","solving","completed","expired","cancelled"};
+        const char* type_str[] = {"","routing","scheduling","packing","sat_custom","ai_verify","general"};
+        
+        uint64_t blocks_left = j.deadline_height > current_height ? 
+            j.deadline_height - current_height : 0;
+        
+        ss << "{\"id\":" << j.id
+           << ",\"type\":\"" << type_str[static_cast<int>(j.type)] << "\""
+           << ",\"status\":\"" << status_str[static_cast<int>(j.status)] << "\""
+           << ",\"title\":\"" << j.title << "\""
+           << ",\"description\":\"" << j.description << "\""
+           << ",\"submitter\":\"" << j.submitter << "\""
+           << ",\"problem_size\":" << j.problem_size
+           << ",\"optimize\":\"" << j.optimize << "\""
+           << ",\"bounty\":" << (j.bounty / 1000000.0)
+           << ",\"submit_height\":" << j.submit_height
+           << ",\"deadline_height\":" << j.deadline_height
+           << ",\"blocks_left\":" << blocks_left
+           << ",\"solutions_count\":" << j.solutions.size();
+        
+        if (!j.winner_address.empty()) {
+            ss << ",\"winner\":\"" << j.winner_address << "\"";
+        }
+        
+        if (j.best_solution()) {
+            ss << ",\"best_score\":" << j.best_solution()->quality_score;
+        }
+        
+        // Include solutions
+        ss << ",\"solutions\":[";
+        for (size_t i = 0; i < j.solutions.size(); ++i) {
+            if (i > 0) ss << ",";
+            const auto& s = j.solutions[i];
+            ss << "{\"solver\":\"" << s.solver_address << "\""
+               << ",\"score\":" << s.quality_score
+               << ",\"hash\":\"" << s.solution_hash << "\""
+               << ",\"height\":" << s.submit_height << "}";
+        }
+        ss << "]}";
+        return ss.str();
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════
 //  Mining Loop
 // ═══════════════════════════════════════════════════════════════════
 
@@ -955,7 +1161,8 @@ static P2PManager* g_p2p = nullptr;
 static std::string* g_miner_addr = nullptr;
 static GovernanceState* g_gov = nullptr;
 static MigrationState* g_migration = nullptr;
-static std::string g_admin_password = "";  // Required for migration endpoints
+static std::string g_admin_password = "";
+static MarketplaceState* g_marketplace = nullptr;  // Required for migration endpoints
 
 // ═══════════════════════════════════════════════════════════════════
 //  Basic Node Protections (built-in, no Docker needed)
@@ -1441,6 +1648,84 @@ void handle_rpc_client(SOCKET client) {
             response = make_json_response(g_migration->to_genesis_json());
         }
     }
+    else if (path == "/api/v1/marketplace/jobs") {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(4);
+        ss << "{\"jobs\":[";
+        if (g_marketplace) {
+            for (size_t i = 0; i < g_marketplace->jobs.size(); ++i) {
+                if (i > 0) ss << ",";
+                ss << g_marketplace->job_to_json(g_marketplace->jobs[i], g_chain->height());
+            }
+        }
+        ss << "],\"count\":" << (g_marketplace ? g_marketplace->jobs.size() : 0)
+           << ",\"total_completed\":" << (g_marketplace ? g_marketplace->total_jobs_completed : 0)
+           << ",\"total_bounties_paid\":" << (g_marketplace ? g_marketplace->total_bounties_paid / 1000000.0 : 0.0)
+           << "}";
+        response = make_json_response(ss.str());
+    }
+    else if (path.substr(0, 24) == "/api/v1/marketplace/job/") {
+        uint32_t jid = std::stoul(path.substr(24));
+        if (g_marketplace) {
+            auto* j = g_marketplace->get_job(jid);
+            if (j) response = make_json_response(g_marketplace->job_to_json(*j, g_chain->height()));
+            else response = make_json_response("{\"error\":\"Job not found\"}");
+        }
+    }
+    else if (path == "/api/v1/marketplace/submit" && is_post) {
+        auto getF = [&](const std::string& key) -> std::string {
+            std::string s1 = "\"" + key + "\":\"";
+            auto p = body.find(s1);
+            if (p == std::string::npos) { s1 = "\"" + key + "\":"; p = body.find(s1); if (p == std::string::npos) return ""; p += s1.size(); auto e = body.find_first_of(",}", p); return body.substr(p, e - p); }
+            p += s1.size(); auto e = body.find("\"", p); return (e != std::string::npos) ? body.substr(p, e - p) : "";
+        };
+        std::string submitter = getF("submitter"), type_str = getF("type"), title = getF("title");
+        std::string desc = getF("description"), pdata = getF("problem_data"), opt = getF("optimize");
+        uint32_t psz = 0; try { psz = std::stoul(getF("problem_size")); } catch(...) {}
+        uint64_t bounty = 0; try { bounty = static_cast<uint64_t>(std::stod(getF("bounty")) * 1000000); } catch(...) {}
+        uint64_t dl = 240; try { dl = std::stoul(getF("deadline_blocks")); } catch(...) {}
+        JobType jt = JobType::GENERAL;
+        if (type_str == "routing") jt = JobType::ROUTING;
+        else if (type_str == "scheduling") jt = JobType::SCHEDULING;
+        else if (type_str == "packing") jt = JobType::PACKING;
+        else if (type_str == "sat_custom") jt = JobType::SAT_CUSTOM;
+        else if (type_str == "ai_verify") jt = JobType::AI_VERIFY;
+        uint64_t bal = g_chain->get_balance(submitter);
+        if (g_marketplace && g_marketplace->submit_job(submitter, jt, title, desc, pdata, psz, opt, bounty, g_chain->height(), dl, bal)) {
+            g_chain->balances[submitter] -= bounty;
+            uint32_t jid = g_marketplace->next_id - 1;
+            std::cout << "[MARKET] Job #" << jid << " | " << title << " | Bounty: " << (bounty / 1000000.0) << " Certs\n";
+            response = make_json_response("{\"ok\":true,\"job_id\":" + std::to_string(jid) + "}");
+        } else {
+            response = make_json_response("{\"ok\":false,\"error\":\"Failed. Check balance covers bounty.\"}");
+        }
+    }
+    else if (path == "/api/v1/marketplace/solve" && is_post) {
+        auto getF = [&](const std::string& key) -> std::string {
+            std::string s1 = "\"" + key + "\":\"";
+            auto p = body.find(s1);
+            if (p == std::string::npos) { s1 = "\"" + key + "\":"; p = body.find(s1); if (p == std::string::npos) return ""; p += s1.size(); auto e = body.find_first_of(",}", p); return body.substr(p, e - p); }
+            p += s1.size(); auto e = body.find("\"", p); return (e != std::string::npos) ? body.substr(p, e - p) : "";
+        };
+        uint32_t jid = 0; try { jid = std::stoul(getF("job_id")); } catch(...) {}
+        std::string solver = getF("solver");
+        double score = 0; try { score = std::stod(getF("quality_score")); } catch(...) {}
+        std::string sol = getF("solution_data");
+        if (g_marketplace && g_marketplace->submit_solution(jid, solver, score, sol, g_chain->height())) {
+            std::cout << "[MARKET] Solution #" << jid << " by " << solver.substr(0, 20) << " | Score: " << score << "\n";
+            response = make_json_response("{\"ok\":true,\"job_id\":" + std::to_string(jid) + "}");
+        } else {
+            response = make_json_response("{\"ok\":false,\"error\":\"Solution failed.\"}");
+        }
+    }
+    else if (path == "/api/v1/marketplace/stats") {
+        uint32_t op = 0, sv = 0, cm = 0;
+        if (g_marketplace) { for (const auto& j : g_marketplace->jobs) { if (j.status == JobStatus::OPEN) op++; else if (j.status == JobStatus::SOLVING) sv++; else if (j.status == JobStatus::COMPLETED) cm++; } }
+        std::ostringstream ss; ss << std::fixed << std::setprecision(4);
+        ss << "{\"total_jobs\":" << (g_marketplace ? g_marketplace->jobs.size() : 0) << ",\"open\":" << op << ",\"solving\":" << sv << ",\"completed\":" << cm
+           << ",\"total_bounties_paid\":" << (g_marketplace ? g_marketplace->total_bounties_paid / 1000000.0 : 0.0) << "}";
+        response = make_json_response(ss.str());
+    }
     else {
         response = make_404();
     }
@@ -1671,6 +1956,8 @@ int main(int argc, char** argv) {
     g_gov = &governance;
     MigrationState migration_state;
     g_migration = &migration_state;
+    MarketplaceState marketplace;
+    g_marketplace = &marketplace;
     std::thread rpc_thread(rpc_server_thread, rpc_port);
     rpc_thread.detach();
 
@@ -1848,6 +2135,7 @@ int main(int argc, char** argv) {
 
         // Process governance votes/activations
         governance.process_height(chain.height(), chain.total_supply);
+        marketplace.process_height(chain.height(), chain.balances);
 
         // ─── Persistence: save chain to disk after each block ───
         chain.save_to_disk(chain_file);
@@ -1910,6 +2198,7 @@ int main(int argc, char** argv) {
     g_p2p = nullptr;
     g_gov = nullptr;
     g_migration = nullptr;
+    g_marketplace = nullptr;
 
     // Save chain and balances to disk before exiting
     std::cout << "\n[SAVE] Saving chain to disk...\n";
