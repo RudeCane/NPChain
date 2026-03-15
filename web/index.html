@@ -5,95 +5,115 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NPChain Wallet</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root{--bg:#050608;--bg2:#0a0d12;--bg3:#0f1319;--bg4:#141920;--border:#1a1f2e;--border2:#252b3a;--text:#c8cdd8;--text2:#7a8194;--text3:#4a5068;--accent:#00e5a0;--accent2:#00b87d;--accentbg:#00e5a00a;--accentbr:#00e5a022;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6;--r:10px;--r2:14px;--r3:20px}
 *{margin:0;padding:0;box-sizing:border-box}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1a2035;border-radius:3px}
-body{background:#06080c;color:#c0c8d8;font-family:'JetBrains Mono','Fira Code',monospace;min-height:100vh;display:flex;justify-content:center}
-#app{width:100%;max-width:520px;min-height:100vh;display:flex;flex-direction:column;border-left:1px solid #141a2a;border-right:1px solid #141a2a;position:relative;overflow:hidden}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #141a2a;background:#080b12}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','JetBrains Mono',monospace;min-height:100vh;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+#app{width:100%;max-width:520px;min-height:100vh;display:flex;flex-direction:column;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:10}
 .logo{display:flex;align-items:center;gap:10px}
-.hex{width:30px;height:30px;background:linear-gradient(135deg,#00e5a0,#0088cc);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#06080c}
-.hex.lg{width:56px;height:56px;font-size:18px}
-.logo-text{font-size:14px;font-weight:600;color:#e0e4f0}
-.net-badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:1px;border:1px solid #00e5a033;color:#00e5a0;background:#00e5a00a}
-.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
-.status-dot.online{background:#00e5a0;box-shadow:0 0 8px #00e5a066}
-.status-dot.offline{background:#ff4444;box-shadow:0 0 8px #ff444466}
-.lock-btn{background:none;border:1px solid #1a2035;border-radius:6px;color:#5a6480;padding:5px 10px;cursor:pointer;font-family:inherit;font-size:11px}
-.lock-btn:hover{border-color:#3a4060;color:#8a90a0}
-.main{flex:1;overflow-y:auto;padding-bottom:20px}
-.screen-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px}
-.title{font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#e8ecf4;margin-bottom:6px}
-.subtitle{font-size:12px;color:#4a5470;margin-bottom:30px;text-align:center;line-height:1.6}
-.card{margin:0 16px 12px;padding:20px;background:#0c1018;border:1px solid #141a2a;border-radius:12px}
-input[type=password],input[type=text],textarea,select{width:100%;padding:10px 12px;background:#0a0e16;border:1px solid #1a2035;border-radius:8px;color:#e0e4f0;font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;transition:border .2s}
-input:focus,textarea:focus,select:focus{border-color:#00e5a0}
-input::placeholder,textarea::placeholder{color:#2a3050}
-textarea{min-height:80px;resize:vertical}
+.logo-mark{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),#0088cc);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--bg);letter-spacing:1px;transform:rotate(-3deg)}
+.logo-text{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:#e8ecf4;letter-spacing:-0.5px}
+.top-right{display:flex;align-items:center;gap:10px}
+.dot{width:7px;height:7px;border-radius:50%}
+.dot.on{background:var(--accent);box-shadow:0 0 10px var(--accentbr)}
+.dot.off{background:var(--red);box-shadow:0 0 10px #ef444433}
+.badge{padding:3px 8px;border-radius:var(--r);font-size:9px;font-weight:600;letter-spacing:1.5px;border:1px solid var(--accentbr);color:var(--accent);background:var(--accentbg)}
+.lock-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text3);padding:4px 10px;cursor:pointer;font-family:inherit;font-size:10px;transition:all .15s}
+.lock-btn:hover{border-color:var(--border2);color:var(--text2)}
+.main{flex:1;overflow-y:auto;padding-bottom:80px}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px}
+h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#eef0f6;letter-spacing:-0.5px;margin-bottom:4px}
+h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:#dde0ea;margin-bottom:12px}
+.sub{font-size:12px;color:var(--text3);margin-bottom:28px;text-align:center;line-height:1.7}
+.card{margin:12px 16px;padding:20px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card.accent{border-color:var(--accentbr);background:linear-gradient(135deg,var(--bg3),#0a1a14)}
+input,textarea,select{width:100%;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);color:#e0e4f0;font-family:inherit;font-size:12px;outline:none;margin-bottom:10px;transition:border .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+textarea{min-height:70px;resize:vertical}
 select{appearance:none;cursor:pointer}
-.btn{width:100%;padding:14px;background:#00e5a0;color:#06080c;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .2s}
-.btn:hover{opacity:.9}
-.btn-sm{padding:8px 14px;font-size:11px;width:auto}
-.btn-approve{background:#00e5a0;color:#06080c}
-.btn-reject{background:#ff4444;color:#fff}
-.btn-abstain{background:#3a4060;color:#c0c8d8}
-.btn-ghost{width:100%;padding:12px;background:transparent;color:#5a6480;border:1px solid #1a2035;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;text-align:center;margin-top:8px}
-.btn-ghost:hover{border-color:#2a3050;color:#8a90a0}
-.btn-danger{color:#ff6b6b;border-color:#2a1a1a}
-.btn-danger:hover{border-color:#ff6b6b44}
-.btn-copy{padding:8px 16px;background:#141a2a;color:#00e5a0;border:1px solid #00e5a033;border-radius:6px;font-family:inherit;font-size:11px;cursor:pointer;font-weight:600}
-.btn-copy:hover{background:#1a2535}
-.label{font-size:10px;color:#4a5470;margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px}
-.addr-box{font-size:12px;color:#8a90a0;word-break:break-all;line-height:1.6;background:#0a0e16;padding:12px;border-radius:8px;border:1px solid #1a2035;margin:8px 0}
-.bal-amount{font-family:'Inter',sans-serif;font-size:36px;font-weight:700;color:#e8ecf4;letter-spacing:-1px}
-.bal-sym{font-size:14px;color:#5a6480;margin-left:8px;font-weight:500}
-.detail{font-size:11px;color:#5a6480;line-height:2.2}
-.detail span{color:#8a90a0}
-.detail .hl{color:#00e5a0}
-.mine-cmd{background:#0a0e16;border:1px solid #1a2035;border-radius:8px;padding:12px;font-size:11px;color:#00e5a0;word-break:break-all;line-height:1.6;margin:10px 0;position:relative}
-.mine-cmd .cbtn{position:absolute;top:4px;right:4px;padding:4px 8px;background:#141a2a;border-radius:4px;cursor:pointer;font-size:10px;color:#5a6480;border:none;font-family:inherit}
-.mine-cmd .cbtn:hover{color:#00e5a0}
-.block-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #0f1420;font-size:11px}
+.btn{width:100%;padding:13px;background:var(--accent);color:var(--bg);border:none;border-radius:var(--r);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px;transition:all .15s}
+.btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-sm{padding:7px 14px;font-size:10px;width:auto;border-radius:6px}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--text2);font-weight:500}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);background:transparent;transform:none}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:#dc2626}
+.btn-green{background:var(--accent)}
+.btn-amber{background:var(--amber);color:var(--bg)}
+.btn-ghost{width:100%;padding:11px;background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:var(--r);font-family:inherit;font-size:12px;cursor:pointer;transition:all .15s}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text2)}
+.btn-danger{color:var(--red);border-color:#2a1a1a}
+.btn-danger:hover{border-color:var(--red);color:var(--red)}
+.copy-btn{padding:5px 12px;background:var(--bg4);color:var(--accent);border:1px solid var(--accentbr);border-radius:6px;font-family:inherit;font-size:10px;cursor:pointer;font-weight:600;transition:all .15s}
+.copy-btn:hover{background:var(--bg3)}
+.lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.val{font-size:12px;color:var(--text);word-break:break-all;line-height:1.6}
+.val.mono{font-family:'IBM Plex Mono',monospace}
+.val.green{color:var(--accent)}
+.bal{font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:700;color:#eef0f6;letter-spacing:-2px}
+.bal-unit{font-size:14px;color:var(--text3);margin-left:6px;font-weight:400;letter-spacing:0}
+.stat-row{display:flex;justify-content:space-between;padding:7px 0;font-size:11px;border-bottom:1px solid var(--border)}
+.stat-row:last-child{border-bottom:none}
+.stat-row .k{color:var(--text3)}.stat-row .v{color:var(--text)}
+.stat-row .v.hl{color:var(--accent)}
+.err{padding:10px 14px;background:#1a0808;border:1px solid #ef444433;border-radius:var(--r);color:var(--red);font-size:11px;margin:0 16px 12px}
+.suc{padding:10px 14px;background:#081a0e;border:1px solid var(--accentbr);border-radius:var(--r);color:var(--accent);font-size:11px;margin:0 16px 12px}
+.cmd-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px 40px 12px 12px;font-size:11px;color:var(--accent);word-break:break-all;line-height:1.6;position:relative;margin:8px 0}
+.cmd-box .cp{position:absolute;top:6px;right:6px;padding:3px 8px;background:var(--bg3);border-radius:4px;cursor:pointer;font-size:9px;color:var(--text3);border:none;font-family:inherit}
+.cmd-box .cp:hover{color:var(--accent)}
+.steps{padding:14px;background:#1a1400;border:1px solid #f59e0b22;border-radius:var(--r);font-size:11px;color:var(--amber);line-height:2}
+.step-n{display:inline-flex;width:20px;height:20px;background:var(--amber);color:var(--bg);border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:10px;margin-right:6px}
+.block-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:11px;border-bottom:1px solid var(--border)}
 .block-row:last-child{border-bottom:none}
-.block-num{color:#00e5a0;font-weight:600}
-.block-miner{color:#5a6480;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.block-miner.you{color:#00e5a0}
-.error{padding:10px 14px;background:#2a0a0a;border:1px solid #ff4444;border-radius:8px;color:#ff6666;font-size:12px;margin:0 16px 12px}
-.success{padding:10px 14px;background:#0a2a0a;border:1px solid #00e5a0;border-radius:8px;color:#00e5a0;font-size:12px;margin:0 16px 12px}
-.fadein{animation:fi .3s ease}
-@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.warning-box{margin:16px 0;padding:14px;background:#2a1a00;border:1px solid #f59e0b44;border-radius:8px;font-size:12px;color:#f59e0b;line-height:1.8}
-.step-num{display:inline-block;width:22px;height:22px;background:#f59e0b;color:#06080c;border-radius:50%;text-align:center;line-height:22px;font-weight:700;font-size:11px;margin-right:6px}
-/* Tab bar */
-.tab-bar{display:flex;gap:0;margin:0;border-bottom:2px solid #141a2a;background:#080b12}
-.tab{flex:1;padding:12px 8px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;font-family:inherit;border:none;background:transparent;color:#4a5470;letter-spacing:.5px;transition:all .15s;border-bottom:2px solid transparent;margin-bottom:-2px}
-.tab.active{color:#00e5a0;border-bottom-color:#00e5a0;background:#0c1018}
-.tab:hover{color:#8a90a0}
-/* Governance */
-.proposal{border:1px solid #1a2035;border-radius:12px;padding:16px;margin:0 16px 12px;background:#0c1018}
-.proposal:hover{border-color:#2a3050}
-.proposal-title{font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#e8ecf4;margin:6px 0}
-.proposal-desc{font-size:12px;color:#6a7490;line-height:1.6;margin-bottom:10px}
-.proposal-meta{display:flex;gap:12px;font-size:10px;color:#4a5470;flex-wrap:wrap;margin-bottom:8px}
-.proposal-meta span{color:#8a90a0}
-.status-badge{display:inline-block;padding:3px 8px;border-radius:10px;font-size:9px;font-weight:700;letter-spacing:.5px}
-.status-active{background:#00e5a022;color:#00e5a0;border:1px solid #00e5a044}
-.status-passed{background:#3b82f622;color:#3b82f6;border:1px solid #3b82f644}
-.status-rejected{background:#ff444422;color:#ff4444;border:1px solid #ff444444}
-.status-activated{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
-.status-expired{background:#6a749022;color:#6a7490;border:1px solid #6a749044}
-.vote-bar{height:20px;background:#141a2a;border-radius:10px;overflow:hidden;display:flex;margin:6px 0}
-.vote-bar .approve{background:#00e5a0;transition:width .3s}
-.vote-bar .reject{background:#ff4444;transition:width .3s}
-.vote-bar .abstain{background:#3a4060;transition:width .3s}
-.vote-stats{display:flex;justify-content:space-between;font-size:10px}
-.vote-stats .at{color:#00e5a0}.vote-stats .rt{color:#ff4444}.vote-stats .bt{color:#6a7490}
-.vote-actions{display:flex;gap:6px;margin-top:10px}
-.vote-actions button{flex:1;border:none;font-family:inherit;cursor:pointer;border-radius:6px}
-.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px}
-.config-grid .key{color:#4a5470}
-.config-grid .val{color:#00e5a0;text-align:right}
-.empty{text-align:center;padding:30px 16px;color:#3a4060;font-size:13px}
+.block-n{color:var(--accent);font-weight:600;min-width:50px}
+.block-m{color:var(--text3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 8px}
+.block-m.you{color:var(--accent)}
+.block-r{color:var(--text3);font-size:10px}
+/* Bottom nav */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:flex;background:var(--bg2);border-top:1px solid var(--border);z-index:20}
+.nav-btn{flex:1;padding:10px 4px 8px;text-align:center;cursor:pointer;border:none;background:none;font-family:inherit;font-size:9px;color:var(--text3);letter-spacing:.5px;transition:color .15s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.nav-btn.active{color:var(--accent)}
+.nav-btn:hover{color:var(--text)}
+.nav-icon{font-size:16px;line-height:1}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);display:none}
+.nav-btn.active .nav-dot{display:block}
+/* Proposal cards */
+.prop{margin:0 16px 10px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2)}
+.prop-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:#dde0ea;margin:6px 0}
+.prop-desc{font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px}
+.prop-meta{display:flex;gap:10px;font-size:9px;color:var(--text3);flex-wrap:wrap;margin-bottom:6px}
+.prop-meta span{color:var(--text2)}
+.sbadge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:8px;font-weight:700;letter-spacing:.5px}
+.sb-active{background:var(--accentbr);color:var(--accent)}
+.sb-passed{background:#3b82f622;color:var(--blue)}
+.sb-rejected{background:#ef444422;color:var(--red)}
+.sb-completed{background:var(--accentbr);color:var(--accent)}
+.sb-expired{background:#4a506822;color:var(--text3)}
+.vbar{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;display:flex;margin:4px 0}
+.vbar .ap{background:var(--accent);transition:width .3s}
+.vbar .rj{background:var(--red);transition:width .3s}
+.vbar .ab{background:var(--text3);transition:width .3s}
+.vote-row{display:flex;justify-content:space-between;font-size:9px;margin-bottom:2px}
+.vote-btns{display:flex;gap:4px;margin-top:8px}
+.vote-btns button{flex:1;border-radius:6px}
+/* Job cards */
+.job{margin:0 16px 10px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2)}
+.job-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:#dde0ea;margin:4px 0}
+.job-bounty{font-size:18px;font-weight:700;color:var(--accent);font-family:'Space Grotesk',sans-serif}
+.empty{text-align:center;padding:40px 16px;color:var(--text3);font-size:12px}
+.fadein{animation:fi .25s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.subtab-bar{display:flex;gap:4px;padding:10px 16px}
+.subtab{padding:7px 14px;border-radius:var(--r);font-size:10px;font-weight:600;cursor:pointer;border:1px solid transparent;font-family:inherit;background:var(--bg4);color:var(--text3);transition:all .15s}
+.subtab.active{background:var(--accentbg);border-color:var(--accentbr);color:var(--accent)}
+.subtab:hover{color:var(--text2)}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.config-grid .k{font-size:11px;color:var(--text3);padding:4px 0}
+.config-grid .v{font-size:11px;color:var(--accent);text-align:right;padding:4px 0}
 </style>
 </head>
 <body>
@@ -115,319 +135,130 @@ function encryptKey(sk,pw){var salt=crypto.getRandomValues(new Uint8Array(16));v
 function decryptKey(data,pw){var salt=new Uint8Array(data.salt.match(/.{2}/g).map(function(b){return parseInt(b,16)}));var key=deriveKey(pw,salt);if(toHex(sha3(key))!==data.check)return null;return true}
 
 // ═══ State ═══
-var LS={save:function(k,v){try{localStorage.setItem('npc3_'+k,JSON.stringify(v))}catch(e){}},load:function(k){try{var v=localStorage.getItem('npc3_'+k);return v?JSON.parse(v):null}catch(e){return null}},del:function(k){try{localStorage.removeItem('npc3_'+k)}catch(e){}}};
+var LS={save:function(k,v){try{localStorage.setItem('npc4_'+k,JSON.stringify(v))}catch(e){}},load:function(k){try{var v=localStorage.getItem('npc4_'+k);return v?JSON.parse(v):null}catch(e){return null}},del:function(k){try{localStorage.removeItem('npc4_'+k)}catch(e){}}};
 var RPC='http://localhost:18333';
-var wallet=null,unlocked=false,pw1='',pw2='',pwu='',err='',suc='';
-var copied=false,cmdCopied=false,justCreated=false;
-var mainTab='dashboard'; // dashboard, governance, explorer
-var govTab='proposals'; // proposals, submit, rules
-var online=false,balance='0.0000',chainHeight=0,chainDiff=0,chainSupply='0',chainTip='',blocksMined=0,recentBlocks=[];
-var proposals=[],govConfig={};
-var gForm={type:'general',title:'',description:'',param_key:'',param_value:''};
-var pollTimer=null;
+var W=null,unlocked=false,pw1='',pw2='',pwu='',err='',suc='',justCreated=false;
+var copied=false,cmdCopied=false;
+var tab='wallet',govSub='proposals',mktSub='browse';
+var on=false,bal='0.0000',ht=0,diff=0,supply='0',tip='',mined=0,blocks=[];
+var props=[],gcfg={},jobs=[],mktStats={};
+var gF={type:'general',title:'',desc:'',pk:'',pv:''};
+var jF={type:'routing',title:'',desc:'',size:'',bounty:'',opt:'minimize_distance',deadline:'240'};
+var pollT=null;
 
-function fetchData(){
-  if(!wallet||!unlocked)return;
-  fetch(RPC+'/api/v1/balance/'+wallet.address).then(function(r){return r.json()}).then(function(d){balance=(d.balance||0).toFixed(4);online=true;render()}).catch(function(){online=false;render()});
-  fetch(RPC+'/api/v1/status').then(function(r){return r.json()}).then(function(d){chainHeight=d.height||0;chainDiff=d.difficulty||0;chainSupply=(d.total_supply||0).toFixed(2);chainTip=d.tip_hash||'';online=true;render()}).catch(function(){});
-  fetch(RPC+'/api/v1/blocks').then(function(r){return r.json()}).then(function(d){recentBlocks=d.blocks||[];render()}).catch(function(){});
-  fetch(RPC+'/api/v1/miner').then(function(r){return r.json()}).then(function(d){blocksMined=d.blocks_mined||0;render()}).catch(function(){});
-  fetch(RPC+'/api/v1/governance/proposals').then(function(r){return r.json()}).then(function(d){proposals=d.proposals||[];render()}).catch(function(){});
-  fetch(RPC+'/api/v1/governance/config').then(function(r){return r.json()}).then(function(d){govConfig=d;render()}).catch(function(){});
+function fetchAll(){
+  if(!W||!unlocked)return;
+  var a=W.address;
+  fetch(RPC+'/api/v1/balance/'+a).then(function(r){return r.json()}).then(function(d){bal=(d.balance||0).toFixed(4);on=true;render()}).catch(function(){on=false;render()});
+  fetch(RPC+'/api/v1/status').then(function(r){return r.json()}).then(function(d){ht=d.height||0;diff=d.difficulty||0;supply=(d.total_supply||0).toFixed(2);tip=d.tip_hash||'';on=true;render()}).catch(function(){});
+  fetch(RPC+'/api/v1/blocks').then(function(r){return r.json()}).then(function(d){blocks=d.blocks||[];render()}).catch(function(){});
+  fetch(RPC+'/api/v1/miner').then(function(r){return r.json()}).then(function(d){mined=d.blocks_mined||0;render()}).catch(function(){});
+  fetch(RPC+'/api/v1/governance/proposals').then(function(r){return r.json()}).then(function(d){props=d.proposals||[];render()}).catch(function(){});
+  fetch(RPC+'/api/v1/governance/config').then(function(r){return r.json()}).then(function(d){gcfg=d;render()}).catch(function(){});
+  fetch(RPC+'/api/v1/marketplace/jobs').then(function(r){return r.json()}).then(function(d){jobs=d.jobs||[];render()}).catch(function(){});
+  fetch(RPC+'/api/v1/marketplace/stats').then(function(r){return r.json()}).then(function(d){mktStats=d;render()}).catch(function(){});
 }
-function startPolling(){if(pollTimer)clearInterval(pollTimer);fetchData();pollTimer=setInterval(fetchData,4000)}
-function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}}
+function startPoll(){if(pollT)clearInterval(pollT);fetchAll();pollT=setInterval(fetchAll,4000)}
+function stopPoll(){if(pollT){clearInterval(pollT);pollT=null}}
 
-function h(tag,props){var el=document.createElement(tag);var ch=Array.prototype.slice.call(arguments,2);if(props)Object.keys(props).forEach(function(k){if(k.indexOf('on')===0)el[k]=props[k];else if(k==='className')el.className=props[k];else if(k==='style'&&typeof props[k]==='object')Object.assign(el.style,props[k]);else el.setAttribute(k,props[k])});ch.forEach(function(c){if(Array.isArray(c))c.forEach(function(cc){if(cc!=null)el.append(typeof cc==='string'||typeof cc==='number'?document.createTextNode(String(cc)):cc)});else if(c!=null&&c!==false)el.append(typeof c==='string'||typeof c==='number'?document.createTextNode(String(c)):c)});return el}
-function copyText(text,which){navigator.clipboard&&navigator.clipboard.writeText(text);if(which==='addr')copied=true;else cmdCopied=true;render();setTimeout(function(){copied=false;cmdCopied=false;render()},2000)}
+function h(t,p){var el=document.createElement(t);var ch=Array.prototype.slice.call(arguments,2);if(p)Object.keys(p).forEach(function(k){if(k.indexOf('on')===0)el[k]=p[k];else if(k==='className')el.className=p[k];else if(k==='style'&&typeof p[k]==='object')Object.assign(el.style,p[k]);else el.setAttribute(k,p[k])});ch.forEach(function(c){if(Array.isArray(c))c.forEach(function(cc){if(cc!=null&&cc!==false)el.append(typeof cc==='string'||typeof cc==='number'?document.createTextNode(String(cc)):cc)});else if(c!=null&&c!==false)el.append(typeof c==='string'||typeof c==='number'?document.createTextNode(String(c)):c)});return el}
+function cp(text,f){navigator.clipboard&&navigator.clipboard.writeText(text);if(f==='a')copied=true;else cmdCopied=true;render();setTimeout(function(){copied=false;cmdCopied=false;render()},2000)}
 
-function submitProposal(){
-  if(!wallet){err='No wallet';render();return}
-  if(!gForm.title){err='Title required';render();return}
-  if(!gForm.description){err='Description required';render();return}
-  fetch(RPC+'/api/v1/governance/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({author:wallet.address,type:gForm.type,title:gForm.title,description:gForm.description,param_key:gForm.param_key,param_value:gForm.param_value})})
-    .then(function(r){return r.json()}).then(function(d){
-      if(d.ok){suc='Proposal #'+d.proposal_id+' submitted!';err='';gForm={type:'general',title:'',description:'',param_key:'',param_value:''};govTab='proposals';fetchData()}
-      else{err=d.error||'Failed';suc=''}
-      render();setTimeout(function(){suc='';err='';render()},5000);
-    }).catch(function(){err='Network error';render()});
+function govVote(pid,choice){
+  if(!W)return;
+  fetch(RPC+'/api/v1/governance/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({proposal_id:pid,voter:W.address,choice:choice})}).then(function(r){return r.json()}).then(function(d){if(d.ok){suc='Vote: '+choice;fetchAll()}else err=d.error||'Failed';render();setTimeout(function(){suc='';err='';render()},4000)}).catch(function(){err='Network error';render()});
 }
-function castVote(pid,choice){
-  if(!wallet){err='No wallet';render();return}
-  fetch(RPC+'/api/v1/governance/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({proposal_id:pid,voter:wallet.address,choice:choice})})
-    .then(function(r){return r.json()}).then(function(d){
-      if(d.ok){suc='Vote: '+choice+' ('+d.voting_power.toFixed(0)+' Certs)';err='';fetchData()}
-      else{err=d.error||'Failed';suc=''}
-      render();setTimeout(function(){suc='';err='';render()},5000);
-    }).catch(function(){err='Network error';render()});
+function govSubmit(){
+  if(!W||!gF.title||!gF.desc){err='Fill all fields';render();return}
+  fetch(RPC+'/api/v1/governance/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({author:W.address,type:gF.type,title:gF.title,description:gF.desc,param_key:gF.pk,param_value:gF.pv})}).then(function(r){return r.json()}).then(function(d){if(d.ok){suc='Proposal #'+d.proposal_id+' submitted!';gF={type:'general',title:'',desc:'',pk:'',pv:''};govSub='proposals';fetchAll()}else err=d.error||'Failed';render();setTimeout(function(){suc='';err='';render()},4000)}).catch(function(){err='Network error';render()});
+}
+function mktSubmit(){
+  if(!W||!jF.title){err='Fill all fields';render();return}
+  fetch(RPC+'/api/v1/marketplace/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submitter:W.address,type:jF.type,title:jF.title,description:jF.desc,problem_size:parseInt(jF.size)||0,bounty:parseFloat(jF.bounty)||0,optimize:jF.opt,deadline_blocks:parseInt(jF.deadline)||240})}).then(function(r){return r.json()}).then(function(d){if(d.ok){suc='Job #'+d.job_id+' posted!';jF={type:'routing',title:'',desc:'',size:'',bounty:'',opt:'minimize_distance',deadline:'240'};mktSub='browse';fetchAll()}else err=d.error||'Failed';render();setTimeout(function(){suc='';err='';render()},4000)}).catch(function(){err='Network error';render()});
 }
 
 function render(){
-  var app=document.getElementById('app');
-  app.innerHTML='';
-
+  var app=document.getElementById('app');app.innerHTML='';
   // Topbar
-  var lockBtn=wallet&&unlocked?h('button',{className:'lock-btn',onclick:function(){unlocked=false;stopPolling();online=false;balance='0.0000';render()}},'Lock'):null;
-  app.append(h('div',{className:'topbar'},
-    h('div',{className:'logo'},h('div',{className:'hex'},'NP'),h('div',{className:'logo-text'},'NPChain')),
-    h('div',{style:{display:'flex',alignItems:'center',gap:'10px'}},
-      h('span',{className:'status-dot '+(online?'online':'offline')}),
-      h('span',{className:'net-badge'},'TESTNET'),
-      lockBtn
-    )
-  ));
+  var lb=W&&unlocked?h('button',{className:'lock-btn',onclick:function(){unlocked=false;stopPoll();on=false;bal='0.0000';render()}},'Lock'):null;
+  app.append(h('div',{className:'topbar'},h('div',{className:'logo'},h('div',{className:'logo-mark'},'NP'),h('div',{className:'logo-text'},'NPChain')),h('div',{className:'top-right'},h('span',{className:'dot '+(on?'on':'off')}),h('span',{className:'badge'},'TESTNET'),lb)));
+  var main=h('div',{className:'main'});app.append(main);
 
-  var main=h('div',{className:'main'});
-  app.append(main);
+  // ═══ CREATE ═══
+  if(!W){main.append(h('div',{className:'center fadein'},h('div',{className:'logo-mark',style:{width:'48px',height:'48px',fontSize:'14px',marginBottom:'24px',transform:'rotate(-3deg)'}},'NP'),h('h1',{},'NPChain Wallet'),h('div',{className:'sub'},'Create a wallet to start mining.',h('br'),'Your keys never leave this device.'),h('div',{style:{width:'100%',maxWidth:'320px'}},err?h('div',{className:'err',style:{margin:'0 0 12px'}},err):null,h('input',{type:'password',placeholder:'Password (8+ characters)',oninput:function(e){pw1=e.target.value}}),h('input',{type:'password',placeholder:'Confirm password',oninput:function(e){pw2=e.target.value},onkeydown:function(e){if(e.key==='Enter')doCreate()}}),h('button',{className:'btn',onclick:doCreate},'Create Wallet'))));return}
 
-  // ─── CREATE WALLET ───
-  if(!wallet){
-    main.append(h('div',{className:'screen-center fadein'},
-      h('div',{className:'hex lg',style:{marginBottom:'20px'}},'NP'),
-      h('div',{className:'title'},'NPChain Wallet'),
-      h('div',{className:'subtitle'},'Create a password-protected wallet.',h('br'),'You need this address to start mining.'),
-      h('div',{style:{width:'100%',maxWidth:'340px'}},
-        err?h('div',{className:'error',style:{margin:'0 0 12px'}},err):null,
-        h('input',{type:'password',placeholder:'Create password (8+ characters)',oninput:function(e){pw1=e.target.value}}),
-        h('input',{type:'password',placeholder:'Confirm password',oninput:function(e){pw2=e.target.value},onkeydown:function(e){if(e.key==='Enter')doCreate()}}),
-        h('button',{className:'btn',onclick:doCreate},'Create Wallet')
-      )
-    ));return;
-  }
+  // ═══ UNLOCK ═══
+  if(!unlocked&&!justCreated){main.append(h('div',{className:'center fadein'},h('div',{className:'logo-mark',style:{width:'48px',height:'48px',fontSize:'14px',marginBottom:'24px',transform:'rotate(-3deg)'}},'NP'),h('h1',{},'Welcome Back'),h('div',{style:{fontSize:'11px',color:' var(--text3)',marginBottom:'24px',textAlign:'center',wordBreak:'break-all',maxWidth:'320px'}},W.address),h('div',{style:{width:'100%',maxWidth:'320px'}},err?h('div',{className:'err',style:{margin:'0 0 12px'}},err):null,h('input',{type:'password',placeholder:'Enter password',oninput:function(e){pwu=e.target.value},onkeydown:function(e){if(e.key==='Enter')doUnlock()}}),h('button',{className:'btn',onclick:doUnlock,style:{marginBottom:'8px'}},'Unlock'),h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet'))));return}
 
-  // ─── UNLOCK ───
-  if(!unlocked&&!justCreated){
-    main.append(h('div',{className:'screen-center fadein'},
-      h('div',{className:'hex lg',style:{marginBottom:'20px'}},'NP'),
-      h('div',{className:'title'},'Welcome Back'),
-      h('div',{style:{fontSize:'12px',color:'#5a6480',marginBottom:'30px',textAlign:'center',wordBreak:'break-all'}},wallet.address),
-      h('div',{style:{width:'100%',maxWidth:'340px'}},
-        err?h('div',{className:'error',style:{margin:'0 0 12px'}},err):null,
-        h('input',{type:'password',placeholder:'Enter password',oninput:function(e){pwu=e.target.value},onkeydown:function(e){if(e.key==='Enter')doUnlock()}}),
-        h('button',{className:'btn',onclick:doUnlock,style:{marginBottom:'10px'}},'Unlock'),
-        h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')
-      )
-    ));return;
-  }
+  // ═══ JUST CREATED ═══
+  if(justCreated){var cmd='./npchain_testnet.exe --address '+W.address;main.append(h('div',{className:'center fadein'},h('h1',{style:{color:'var(--accent)'}},'Wallet Created'),h('div',{style:{width:'100%',maxWidth:'380px',marginTop:'20px'}},h('div',{className:'lbl'},'YOUR ADDRESS'),h('div',{className:'cmd-box',style:{color:'var(--text)'}},W.address,h('button',{className:'cp',onclick:function(){cp(W.address,'a')}},copied?'Copied':'Copy')),h('div',{className:'steps'},h('span',{className:'step-n'},'1'),' Copy address above',h('br'),h('span',{className:'step-n'},'2'),' Open MSYS2 UCRT64',h('br'),h('span',{className:'step-n'},'3'),' Paste mining command below',h('br'),h('span',{className:'step-n'},'4'),' Return here for dashboard'),h('div',{className:'lbl',style:{marginTop:'16px'}},'MINING COMMAND'),h('div',{className:'cmd-box'},cmd,h('button',{className:'cp',onclick:function(){cp(cmd,'c')}},cmdCopied?'Copied':'Copy')),h('button',{className:'btn',style:{marginTop:'16px'},onclick:function(){justCreated=false;startPoll();render()}},'Open Dashboard'))));return}
 
-  // ─── JUST CREATED ───
-  if(justCreated){
-    var cmd='./npchain_testnet.exe --address '+wallet.address;
-    main.append(h('div',{className:'screen-center fadein'},
-      h('div',{className:'title',style:{color:'#00e5a0',marginBottom:'20px'}},'Wallet Created!'),
-      h('div',{style:{width:'100%',maxWidth:'380px'}},
-        h('div',{className:'label'},'YOUR MINING ADDRESS'),
-        h('div',{className:'addr-box'},wallet.address),
-        h('div',{style:{textAlign:'center',margin:'10px 0'}},h('button',{className:'btn-copy',onclick:function(){copyText(wallet.address,'addr')}},copied?'Copied!':'Copy Address')),
-        h('div',{className:'warning-box'},
-          h('span',{className:'step-num'},'1'),' Copy your address above',h('br'),
-          h('span',{className:'step-num'},'2'),' Open MSYS2 UCRT64 terminal',h('br'),
-          h('span',{className:'step-num'},'3'),' Paste the mining command below',h('br'),
-          h('span',{className:'step-num'},'4'),' Come back here to see your balance'),
-        h('div',{className:'label',style:{marginTop:'16px'}},'MINING COMMAND'),
-        h('div',{className:'mine-cmd'},cmd,h('button',{className:'cbtn',onclick:function(){copyText(cmd,'cmd')}},cmdCopied?'Copied!':'Copy')),
-        h('button',{className:'btn',style:{marginTop:'20px'},onclick:function(){justCreated=false;startPolling();render()}},'Go to Dashboard')
-      )
-    ));return;
-  }
+  // ═══ BOTTOM NAV ═══
+  var icons={wallet:'\u25C8',governance:'\u2696',marketplace:'\u2B21',migration:'\u21C4',explorer:'\u25A3'};
+  var navEl=h('div',{className:'nav'});
+  ['wallet','governance','marketplace','migration','explorer'].forEach(function(t){
+    navEl.append(h('button',{className:'nav-btn'+(tab===t?' active':''),onclick:function(){tab=t;render()}},h('span',{className:'nav-icon'},icons[t]),t.charAt(0).toUpperCase()+t.slice(1),h('span',{className:'nav-dot'})));
+  });
+  app.append(navEl);
 
-  // ─── TAB BAR ───
-  app.insertBefore(h('div',{className:'tab-bar'},
-    h('button',{className:'tab'+(mainTab==='dashboard'?' active':''),onclick:function(){mainTab='dashboard';render()}},'Wallet'),
-    h('button',{className:'tab'+(mainTab==='governance'?' active':''),onclick:function(){mainTab='governance';render()}},'Governance'+(proposals.length>0?' ('+proposals.length+')':'')),
-    h('button',{className:'tab'+(mainTab==='explorer'?' active':''),onclick:function(){mainTab='explorer';render()}},'Explorer')
-  ),main);
+  if(err)main.append(h('div',{className:'err'},err));
+  if(suc)main.append(h('div',{className:'suc'},suc));
 
-  if(err)main.append(h('div',{className:'error'},err));
-  if(suc)main.append(h('div',{className:'success'},suc));
-
-  // ═══════════ DASHBOARD TAB ═══════════
-  if(mainTab==='dashboard'){
-    main.append(h('div',{className:'card',style:{textAlign:'center',paddingTop:'28px',paddingBottom:'28px'}},
-      h('div',{className:'label'},'BALANCE'),
-      h('div',{style:{marginTop:'8px'}},h('span',{className:'bal-amount'},balance),h('span',{className:'bal-sym'},'CERTS')),
-      h('div',{style:{marginTop:'12px',fontSize:'11px',color:online?'#00e5a0':'#ff6b6b'}},online?'Node connected':'Node offline')
-    ));
-    main.append(h('div',{className:'card'},
-      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}},
-        h('div',{className:'label',style:{marginBottom:'0'}},'YOUR ADDRESS'),
-        h('button',{className:'btn-copy',onclick:function(){copyText(wallet.address,'addr')}},copied?'Copied!':'Copy')),
-      h('div',{style:{fontSize:'12px',color:'#8a90a0',wordBreak:'break-all',lineHeight:'1.6'}},wallet.address)
-    ));
-    var cmd='./npchain_testnet.exe --address '+wallet.address;
-    main.append(h('div',{className:'card'},
-      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}},
-        h('div',{className:'label',style:{marginBottom:'0'}},'MINING COMMAND'),
-        h('button',{className:'btn-copy',onclick:function(){copyText(cmd,'cmd')}},cmdCopied?'Copied!':'Copy')),
-      h('div',{style:{fontSize:'11px',color:'#00e5a0',wordBreak:'break-all',lineHeight:'1.6'}},cmd)
-    ));
-    if(online){
-      main.append(h('div',{className:'card'},
-        h('div',{className:'label',style:{marginBottom:'12px'}},'CHAIN STATUS'),
-        h('div',{className:'detail'},
-          'Height: ',h('span',{},String(chainHeight)),h('br'),
-          'Difficulty: ',h('span',{},String(chainDiff)),h('br'),
-          'Total Supply: ',h('span',{},chainSupply+' Certs'),h('br'),
-          'Blocks You Mined: ',h('span',{className:'hl'},String(blocksMined)),h('br'),
-          'Tip: ',h('span',{},chainTip?(chainTip.substring(0,24)+'...'):''))
-      ));
-    }
-    if(recentBlocks.length>0){
-      var rows=recentBlocks.slice(0,10).map(function(b){
-        return h('div',{className:'block-row'},
-          h('span',{className:'block-num'},'#'+b.height),
-          h('span',{className:'block-miner'+(b.miner===wallet.address?' you':'')},b.miner===wallet.address?'You!':(b.miner||'').substring(0,18)+'...'),
-          h('span',{style:{color:'#4a5470',fontSize:'10px'}},(b.reward/1000000).toFixed(0)+' Certs'));
-      });
-      main.append(h('div',{className:'card'},h('div',{className:'label',style:{marginBottom:'12px'}},'RECENT BLOCKS'),rows));
-    }
-    main.append(h('div',{style:{padding:'20px 16px'}},h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')));
+  // ═══════════ WALLET TAB ═══════════
+  if(tab==='wallet'){
+    main.append(h('div',{className:'card accent',style:{textAlign:'center',padding:'28px 20px'}},h('div',{className:'lbl'},'BALANCE'),h('div',{style:{marginTop:'8px'}},h('span',{className:'bal'},bal),h('span',{className:'bal-unit'},'CERTS')),h('div',{style:{marginTop:'10px',fontSize:'10px',color:on?'var(--accent)':'var(--red)'}},on?'Node connected':'Node offline')));
+    main.append(h('div',{className:'card'},h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}},h('div',{className:'lbl',style:{margin:0}},'ADDRESS'),h('button',{className:'copy-btn',onclick:function(){cp(W.address,'a')}},copied?'Copied':'Copy')),h('div',{className:'val mono',style:{fontSize:'11px'}},W.address)));
+    var cmd='./npchain_testnet.exe --address '+W.address;
+    main.append(h('div',{className:'card'},h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}},h('div',{className:'lbl',style:{margin:0}},'MINING COMMAND'),h('button',{className:'copy-btn',onclick:function(){cp(cmd,'c')}},cmdCopied?'Copied':'Copy')),h('div',{className:'val mono green',style:{fontSize:'10px'}},cmd)));
+    if(on){main.append(h('div',{className:'card'},h('div',{className:'lbl',style:{marginBottom:'8px'}},'CHAIN STATUS'),h('div',{className:'stat-row'},h('span',{className:'k'},'Height'),h('span',{className:'v'},String(ht))),h('div',{className:'stat-row'},h('span',{className:'k'},'Difficulty'),h('span',{className:'v'},String(diff))),h('div',{className:'stat-row'},h('span',{className:'k'},'Supply'),h('span',{className:'v'},supply+' Certs')),h('div',{className:'stat-row'},h('span',{className:'k'},'You Mined'),h('span',{className:'v hl'},String(mined)+' blocks')),h('div',{className:'stat-row'},h('span',{className:'k'},'Tip'),h('span',{className:'v'},tip?tip.substring(0,20)+'...':''))))}
+    if(blocks.length>0){var rows=blocks.slice(0,12).map(function(b){return h('div',{className:'block-row'},h('span',{className:'block-n'},'#'+b.height),h('span',{className:'block-m'+(b.miner===W.address?' you':'')},b.miner===W.address?'You!':(b.miner||'').substring(0,16)+'...'),h('span',{className:'block-r'},(b.reward/1000000).toFixed(0)))});main.append(h('div',{className:'card'},h('div',{className:'lbl',style:{marginBottom:'8px'}},'RECENT BLOCKS'),rows))}
+    main.append(h('div',{style:{padding:'16px'}},h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')));
   }
 
   // ═══════════ GOVERNANCE TAB ═══════════
-  if(mainTab==='governance'){
-    // Sub-tabs
-    main.append(h('div',{style:{display:'flex',gap:'4px',padding:'12px 16px'}},
-      h('button',{className:'tab'+(govTab==='proposals'?' active':''),style:{flex:'1',borderBottom:'none',margin:'0',fontSize:'11px'},onclick:function(){govTab='proposals';render()}},'Proposals'),
-      h('button',{className:'tab'+(govTab==='submit'?' active':''),style:{flex:'1',borderBottom:'none',margin:'0',fontSize:'11px'},onclick:function(){govTab='submit';render()}},'Submit'),
-      h('button',{className:'tab'+(govTab==='rules'?' active':''),style:{flex:'1',borderBottom:'none',margin:'0',fontSize:'11px'},onclick:function(){govTab='rules';render()}},'Rules')
-    ));
+  if(tab==='governance'){
+    main.append(h('div',{className:'subtab-bar'},h('button',{className:'subtab'+(govSub==='proposals'?' active':''),onclick:function(){govSub='proposals';render()}},'Proposals'+(props.length?' ('+props.length+')':'')),h('button',{className:'subtab'+(govSub==='submit'?' active':''),onclick:function(){govSub='submit';render()}},'Submit'),h('button',{className:'subtab'+(govSub==='rules'?' active':''),onclick:function(){govSub='rules';render()}},'Rules')));
+    if(govSub==='proposals'){
+      if(!props.length){main.append(h('div',{className:'empty'},'No proposals yet.'))}
+      else{props.slice().sort(function(a,b){if(a.status==='active'&&b.status!=='active')return -1;if(b.status==='active'&&a.status!=='active')return 1;return b.id-a.id}).forEach(function(p){var tv=p.votes_approve+p.votes_reject+p.votes_abstain;var ap=tv>0?(p.votes_approve/tv*100):0,rp=tv>0?(p.votes_reject/tv*100):0;var cls={active:'sb-active',passed:'sb-passed',rejected:'sb-rejected',activated:'sb-completed',expired:'sb-expired'};var bl=p.vote_end_height>ht?p.vote_end_height-ht:0;var c=h('div',{className:'prop'},h('div',{style:{display:'flex',justifyContent:'space-between'}},h('span',{style:{fontSize:'9px',color:'var(--text3)'}},'NIP-'+String(p.id).padStart(3,'0')),h('span',{className:'sbadge '+(cls[p.status]||'')},p.status.toUpperCase())),h('div',{className:'prop-title'},p.title),h('div',{className:'prop-desc'},p.description),h('div',{className:'prop-meta'},h('span',{},'Approval: ',h('span',{style:{color:p.approval_rate>=75?'var(--accent)':'var(--red)'}},p.approval_rate.toFixed(1)+'%')),p.status==='active'?h('span',{},'Blocks left: '+bl):null),h('div',{className:'vote-row'},h('span',{style:{color:'var(--accent)'}},'Yes: '+p.votes_approve.toFixed(0)),h('span',{style:{color:'var(--red)'}},'No: '+p.votes_reject.toFixed(0)),h('span',{style:{color:'var(--text3)'}},'Abstain: '+p.votes_abstain.toFixed(0))),h('div',{className:'vbar'},h('div',{className:'ap',style:{width:ap+'%'}}),h('div',{className:'rj',style:{width:rp+'%'}})));if(p.status==='active'){var pid=p.id;c.append(h('div',{className:'vote-btns'},h('button',{className:'btn-sm btn-green',onclick:function(){govVote(pid,'approve')}},'Approve'),h('button',{className:'btn-sm btn-red',onclick:function(){govVote(pid,'reject')}},'Reject'),h('button',{className:'btn-sm btn-outline',onclick:function(){govVote(pid,'abstain')}},'Abstain')))}main.append(c)})}
+    }
+    if(govSub==='submit'){main.append(h('div',{className:'card'},h('div',{className:'lbl'},'TYPE'),h('select',{onchange:function(e){gF.type=e.target.value;render()}},h('option',{value:'general'},'General'),h('option',{value:'param_change'},'Parameter Change'),h('option',{value:'crypto_upgrade'},'Crypto Upgrade'),h('option',{value:'fee_change'},'Fee Change'),h('option',{value:'emission_change'},'Emission Change')),h('div',{className:'lbl'},'TITLE'),h('input',{type:'text',placeholder:'Proposal title',value:gF.title,oninput:function(e){gF.title=e.target.value}}),h('div',{className:'lbl'},'DESCRIPTION'),h('textarea',{placeholder:'Explain your proposal...',value:gF.desc,oninput:function(e){gF.desc=e.target.value}}),gF.type==='param_change'?[h('div',{className:'lbl'},'PARAMETER'),h('input',{type:'text',placeholder:'e.g. block_time',value:gF.pk,oninput:function(e){gF.pk=e.target.value}}),h('div',{className:'lbl'},'VALUE'),h('input',{type:'text',placeholder:'e.g. 30',value:gF.pv,oninput:function(e){gF.pv=e.target.value}})]:null,h('button',{className:'btn',onclick:govSubmit},'Submit Proposal'),h('div',{style:{fontSize:'9px',color:'var(--text3)',marginTop:'6px',textAlign:'center'}},'Requires ~47,564 Certs')))}
+    if(govSub==='rules'){main.append(h('div',{className:'card'},h('div',{className:'lbl',style:{marginBottom:'8px'}},'VOTING RULES'),h('div',{className:'config-grid'},h('div',{className:'k'},'Vote Period'),h('div',{className:'v'},(gcfg.vote_period_blocks||240)+' blocks'),h('div',{className:'k'},'Activation Delay'),h('div',{className:'v'},(gcfg.activation_delay||120)+' blocks'),h('div',{className:'k'},'Approval'),h('div',{className:'v'},(gcfg.approval_threshold||0.75)*100+'%'),h('div',{className:'k'},'Min Participation'),h('div',{className:'v'},(gcfg.participation_min||0.70)*100+'%'),h('div',{className:'k'},'Emergency'),h('div',{className:'v'},(gcfg.emergency_threshold||0.9)*100+'%'))));main.append(h('div',{className:'card accent',style:{textAlign:'center',padding:'24px'}},h('div',{style:{fontSize:'28px',fontWeight:'700',color:'var(--amber)',fontFamily:'Space Grotesk'}},'70%'),h('div',{style:{fontSize:'11px',color:'var(--text2)',margin:'4px 0 12px'}},'of all miners must vote'),h('div',{style:{fontSize:'28px',fontWeight:'700',color:'var(--accent)',fontFamily:'Space Grotesk'}},'75%'),h('div',{style:{fontSize:'11px',color:'var(--text2)',margin:'4px 0 12px'}},'approval to pass'),h('div',{style:{fontSize:'28px',fontWeight:'700',color:'var(--red)',fontFamily:'Space Grotesk'}},'90%'),h('div',{style:{fontSize:'11px',color:'var(--text2)',margin:'4px 0'}},'for emergencies')))}
+  }
 
-    if(govTab==='proposals'){
-      if(proposals.length===0){
-        main.append(h('div',{className:'empty'},'No proposals yet. Be the first!'));
-      } else {
-        proposals.slice().sort(function(a,b){if(a.status==='active'&&b.status!=='active')return -1;if(b.status==='active'&&a.status!=='active')return 1;return b.id-a.id}).forEach(function(p){
-          var tv=p.votes_approve+p.votes_reject+p.votes_abstain;
-          var ap=tv>0?(p.votes_approve/tv*100):0,rp=tv>0?(p.votes_reject/tv*100):0,bp=tv>0?(p.votes_abstain/tv*100):0;
-          var bl=p.vote_end_height>chainHeight?(p.vote_end_height-chainHeight):0;
-          var cls={active:'status-active',passed:'status-passed',rejected:'status-rejected',activated:'status-activated',expired:'status-expired'};
-          var card=h('div',{className:'proposal'},
-            h('div',{style:{display:'flex',justifyContent:'space-between'}},
-              h('span',{style:{fontSize:'10px',color:'#4a5470'}},'NIP-'+String(p.id).padStart(3,'0')),
-              h('span',{className:'status-badge '+(cls[p.status]||'')},p.status.toUpperCase())),
-            h('div',{className:'proposal-title'},p.title),
-            h('div',{className:'proposal-desc'},p.description),
-            h('div',{className:'proposal-meta'},
-              h('div',{},'Author: ',h('span',{},p.author.substring(0,16)+'...')),
-              h('div',{},'Approval: ',h('span',{style:{color:p.approval_rate>=75?'#00e5a0':'#ff6b6b'}},p.approval_rate.toFixed(1)+'%')),
-              p.status==='active'?h('div',{},'Blocks left: ',h('span',{style:{color:'#f59e0b'}},String(bl))):null),
-            h('div',{className:'vote-stats'},
-              h('span',{className:'at'},'Approve: '+p.votes_approve.toFixed(0)),
-              h('span',{className:'rt'},'Reject: '+p.votes_reject.toFixed(0)),
-              h('span',{className:'bt'},'Abstain: '+p.votes_abstain.toFixed(0))),
-            h('div',{className:'vote-bar'},
-              h('div',{className:'approve',style:{width:ap+'%'}}),
-              h('div',{className:'reject',style:{width:rp+'%'}}),
-              h('div',{className:'abstain',style:{width:bp+'%'}}))
-          );
-          if(p.status==='active'){
-            var pid=p.id;
-            card.append(h('div',{className:'vote-actions'},
-              h('button',{className:'btn-sm btn-approve',onclick:function(){castVote(pid,'approve')}},'Approve'),
-              h('button',{className:'btn-sm btn-reject',onclick:function(){castVote(pid,'reject')}},'Reject'),
-              h('button',{className:'btn-sm btn-abstain',onclick:function(){castVote(pid,'abstain')}},'Abstain')));
-          }
-          main.append(card);
-        });
-      }
+  // ═══════════ MARKETPLACE TAB ═══════════
+  if(tab==='marketplace'){
+    main.append(h('div',{className:'subtab-bar'},h('button',{className:'subtab'+(mktSub==='browse'?' active':''),onclick:function(){mktSub='browse';render()}},'Jobs'+(jobs.length?' ('+jobs.length+')':'')),h('button',{className:'subtab'+(mktSub==='post'?' active':''),onclick:function(){mktSub='post';render()}},'Post Job'),h('button',{className:'subtab'+(mktSub==='stats'?' active':''),onclick:function(){mktSub='stats';render()}},'Stats')));
+    if(mktSub==='browse'){
+      if(!jobs.length){main.append(h('div',{className:'empty'},'No marketplace jobs yet. Post the first one!'))}
+      else{jobs.slice().sort(function(a,b){if(a.status==='open'&&b.status!=='open')return -1;if(b.status==='open'&&a.status!=='open')return 1;return b.id-a.id}).forEach(function(j){var cls={open:'sb-active',solving:'sb-passed',completed:'sb-completed',expired:'sb-expired',cancelled:'sb-rejected'};var bl=j.deadline_height>(ht||0)?j.deadline_height-(ht||0):0;main.append(h('div',{className:'job'},h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},h('span',{style:{fontSize:'9px',color:'var(--text3)'}},'JOB-'+String(j.id).padStart(3,'0')+' \u2022 '+j.type),h('span',{className:'sbadge '+(cls[j.status]||'')},j.status.toUpperCase())),h('div',{className:'job-title'},j.title),h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',margin:'6px 0'}},h('div',{className:'job-bounty'},j.bounty.toFixed(0)+' Certs'),h('div',{style:{fontSize:'10px',color:'var(--text3)'}},j.solutions_count+' solutions')),h('div',{className:'prop-meta'},h('span',{},'Size: '+j.problem_size),h('span',{},'Optimize: '+j.optimize),j.status==='open'?h('span',{},'Blocks left: '+bl):null,j.winner?h('span',{style:{color:'var(--accent)'}},'Winner: '+j.winner.substring(0,16)+'...'):null)))})}
     }
-    if(govTab==='submit'){
-      main.append(h('div',{className:'card'},
-        h('div',{className:'label'},'PROPOSAL TYPE'),
-        h('select',{onchange:function(e){gForm.type=e.target.value;render()}},
-          h('option',{value:'general'},'General'),h('option',{value:'param_change'},'Parameter Change'),
-          h('option',{value:'crypto_upgrade'},'Crypto Upgrade'),h('option',{value:'fee_change'},'Fee Change'),
-          h('option',{value:'emission_change'},'Emission Change')),
-        h('div',{className:'label'},'TITLE'),
-        h('input',{type:'text',placeholder:'Proposal title',value:gForm.title,oninput:function(e){gForm.title=e.target.value}}),
-        h('div',{className:'label'},'DESCRIPTION'),
-        h('textarea',{placeholder:'Explain your proposal...',value:gForm.description,oninput:function(e){gForm.description=e.target.value}}),
-        gForm.type==='param_change'?[
-          h('div',{className:'label'},'PARAMETER'),
-          h('input',{type:'text',placeholder:'e.g. block_time',value:gForm.param_key,oninput:function(e){gForm.param_key=e.target.value}}),
-          h('div',{className:'label'},'NEW VALUE'),
-          h('input',{type:'text',placeholder:'e.g. 30',value:gForm.param_value,oninput:function(e){gForm.param_value=e.target.value}})
-        ]:null,
-        h('button',{className:'btn',onclick:submitProposal},'Submit Proposal'),
-        h('div',{style:{fontSize:'10px',color:'#4a5470',marginTop:'8px',textAlign:'center'}},'Requires ~47,564 Certs minimum balance')
-      ));
-    }
-    if(govTab==='rules'){
-      main.append(h('div',{className:'card'},
-        h('div',{className:'label',style:{marginBottom:'12px'}},'VOTING RULES'),
-        h('div',{className:'config-grid'},
-          h('div',{className:'key'},'Voting Period'),h('div',{className:'val'},(govConfig.vote_period_blocks||240)+' blocks'),
-          h('div',{className:'key'},'Activation Delay'),h('div',{className:'val'},(govConfig.activation_delay||120)+' blocks'),
-          h('div',{className:'key'},'Approval Threshold'),h('div',{className:'val'},(govConfig.approval_threshold||0.75)*100+'%'),
-          h('div',{className:'key'},'Min Participation'),h('div',{className:'val'},(govConfig.participation_min||0.70)*100+'%'),
-          h('div',{className:'key'},'Min to Propose'),h('div',{className:'val'},(govConfig.min_proposer_balance||47564).toFixed(0)+' Certs'),
-          h('div',{className:'key'},'Emergency Threshold'),h('div',{className:'val'},(govConfig.emergency_threshold||0.9)*100+'%')
-        )
-      ));
-      main.append(h('div',{className:'card',style:{background:'#0a1a10',border:'1px solid #00e5a033'}},
-        h('div',{style:{fontSize:'13px',color:'#c0c8d8',lineHeight:'2.2',textAlign:'center'}},
-          h('span',{style:{fontSize:'24px',fontWeight:'700',color:'#f59e0b'}},'70%'),' of miners must vote',h('br'),
-          h('span',{style:{fontSize:'24px',fontWeight:'700',color:'#00e5a0'}},'75%'),' approval to pass',h('br'),
-          h('span',{style:{fontSize:'24px',fontWeight:'700',color:'#ff4444'}},'90%'),' for emergencies'
-        )
-      ));
-    }
+    if(mktSub==='post'){main.append(h('div',{className:'card'},h('div',{className:'lbl'},'JOB TYPE'),h('select',{onchange:function(e){jF.type=e.target.value;render()}},h('option',{value:'routing'},'Routing / TSP'),h('option',{value:'scheduling'},'Scheduling'),h('option',{value:'packing'},'Bin Packing'),h('option',{value:'sat_custom'},'Custom SAT'),h('option',{value:'ai_verify'},'AI Verification'),h('option',{value:'general'},'General')),h('div',{className:'lbl'},'TITLE'),h('input',{type:'text',placeholder:'e.g. Optimize 50 deliveries',value:jF.title,oninput:function(e){jF.title=e.target.value}}),h('div',{className:'lbl'},'DESCRIPTION'),h('textarea',{placeholder:'Describe the problem...',value:jF.desc,oninput:function(e){jF.desc=e.target.value}}),h('div',{style:{display:'flex',gap:'8px'}},h('div',{style:{flex:1}},h('div',{className:'lbl'},'PROBLEM SIZE'),h('input',{type:'text',placeholder:'e.g. 50',value:jF.size,oninput:function(e){jF.size=e.target.value}})),h('div',{style:{flex:1}},h('div',{className:'lbl'},'BOUNTY (CERTS)'),h('input',{type:'text',placeholder:'e.g. 500',value:jF.bounty,oninput:function(e){jF.bounty=e.target.value}}))),h('div',{className:'lbl'},'DEADLINE (BLOCKS)'),h('input',{type:'text',placeholder:'240 (~1 hour)',value:jF.deadline,oninput:function(e){jF.deadline=e.target.value}}),h('button',{className:'btn',onclick:mktSubmit},'Post Job'),h('div',{style:{fontSize:'9px',color:'var(--text3)',marginTop:'6px',textAlign:'center'}},'Bounty escrowed from your balance')))}
+    if(mktSub==='stats'){main.append(h('div',{className:'card'},h('div',{className:'lbl',style:{marginBottom:'8px'}},'MARKETPLACE STATS'),h('div',{className:'stat-row'},h('span',{className:'k'},'Total Jobs'),h('span',{className:'v'},String(mktStats.total_jobs||0))),h('div',{className:'stat-row'},h('span',{className:'k'},'Open'),h('span',{className:'v hl'},String(mktStats.open||0))),h('div',{className:'stat-row'},h('span',{className:'k'},'Solving'),h('span',{className:'v'},String(mktStats.solving||0))),h('div',{className:'stat-row'},h('span',{className:'k'},'Completed'),h('span',{className:'v'},String(mktStats.completed||0))),h('div',{className:'stat-row'},h('span',{className:'k'},'Bounties Paid'),h('span',{className:'v hl'},(mktStats.total_bounties_paid||0).toFixed(2)+' Certs'))))}
+  }
+
+  // ═══════════ MIGRATION TAB ═══════════
+  if(tab==='migration'){
+    main.append(h('div',{className:'card accent',style:{textAlign:'center',padding:'24px'}},h('div',{className:'lbl'},'TESTNET TO MAINNET'),h('div',{style:{fontSize:'36px',fontWeight:'700',color:'var(--amber)',fontFamily:'Space Grotesk',margin:'8px 0'}},'1000:1'),h('div',{style:{fontSize:'11px',color:'var(--text2)'}},'1,000 testnet Certs = 1 mainnet Cert')));
+    var tBal=parseFloat(bal)||0;var mBal=(tBal/1000).toFixed(4);
+    main.append(h('div',{className:'card'},h('div',{className:'lbl',style:{marginBottom:'8px'}},'YOUR MIGRATION ESTIMATE'),h('div',{className:'stat-row'},h('span',{className:'k'},'Testnet Balance'),h('span',{className:'v'},bal+' Certs')),h('div',{className:'stat-row'},h('span',{className:'k'},'Mainnet Estimate'),h('span',{className:'v hl'},mBal+' Certs')),h('div',{className:'stat-row'},h('span',{className:'k'},'Blocks Mined'),h('span',{className:'v'},String(mined))),h('div',{className:'stat-row'},h('span',{className:'k'},'Eligible'),h('span',{className:'v',style:{color:tBal>=47564?'var(--accent)':'var(--red)'}},tBal>=47564?'Yes':'Need ~47,564 Certs'))));
+    main.append(h('div',{className:'card'},h('div',{className:'lbl',style:{marginBottom:'8px'}},'HOW MIGRATION WORKS'),h('div',{style:{fontSize:'11px',color:'var(--text2)',lineHeight:'2'}},h('span',{style:{color:'var(--accent)',fontWeight:'600'}},'1.'),' Mine on testnet and accumulate Certs',h('br'),h('span',{style:{color:'var(--accent)',fontWeight:'600'}},'2.'),' Admin takes balance snapshot at set height',h('br'),h('span',{style:{color:'var(--accent)',fontWeight:'600'}},'3.'),' Merkle proof generated for every eligible wallet',h('br'),h('span',{style:{color:'var(--accent)',fontWeight:'600'}},'4.'),' Complete KYC to verify your identity',h('br'),h('span',{style:{color:'var(--accent)',fontWeight:'600'}},'5.'),' Mainnet genesis includes your balance at 1000:1')));
   }
 
   // ═══════════ EXPLORER TAB ═══════════
-  if(mainTab==='explorer'){
-    if(online){
-      main.append(h('div',{className:'card'},
-        h('div',{className:'label',style:{marginBottom:'12px'}},'CHAIN STATUS'),
-        h('div',{className:'detail'},
-          'Height: ',h('span',{},String(chainHeight)),h('br'),
-          'Difficulty: ',h('span',{},String(chainDiff)),h('br'),
-          'Total Supply: ',h('span',{},chainSupply+' Certs'),h('br'),
-          'Tip: ',h('span',{},chainTip?(chainTip.substring(0,32)+'...'):''))
-      ));
-    }
-    if(recentBlocks.length>0){
-      var rows=recentBlocks.map(function(b){
-        return h('div',{className:'block-row'},
-          h('span',{className:'block-num'},'#'+b.height),
-          h('span',{className:'block-miner'+(b.miner===wallet.address?' you':'')},b.miner===wallet.address?'You!':(b.miner||'').substring(0,20)+'...'),
-          h('span',{style:{color:'#4a5470',fontSize:'10px'}},(b.reward/1000000).toFixed(0)+' Certs'));
-      });
-      main.append(h('div',{className:'card'},h('div',{className:'label',style:{marginBottom:'12px'}},'ALL BLOCKS'),rows));
-    } else {
-      main.append(h('div',{className:'empty'},'No blocks yet. Start mining!'));
-    }
+  if(tab==='explorer'){
+    if(on){main.append(h('div',{className:'card'},h('div',{className:'lbl',style:{marginBottom:'8px'}},'CHAIN'),h('div',{className:'stat-row'},h('span',{className:'k'},'Height'),h('span',{className:'v'},String(ht))),h('div',{className:'stat-row'},h('span',{className:'k'},'Difficulty'),h('span',{className:'v'},String(diff))),h('div',{className:'stat-row'},h('span',{className:'k'},'Supply'),h('span',{className:'v'},supply+' Certs')),h('div',{className:'stat-row'},h('span',{className:'k'},'Tip'),h('span',{className:'v'},tip?tip.substring(0,28)+'...':''))))}
+    if(blocks.length>0){var rows=blocks.map(function(b){return h('div',{className:'block-row'},h('span',{className:'block-n'},'#'+b.height),h('span',{className:'block-m'+(b.miner===W.address?' you':'')},b.miner===W.address?'You!':(b.miner||'').substring(0,18)+'...'),h('span',{className:'block-r'},(b.reward/1000000).toFixed(0)+' Certs'))});main.append(h('div',{className:'card'},h('div',{className:'lbl',style:{marginBottom:'8px'}},'ALL BLOCKS'),rows))}
+    else main.append(h('div',{className:'empty'},'No blocks yet.'));
   }
 }
 
-// ─── Actions ───
-function doCreate(){
-  err='';
-  if(pw1.length<8){err='Password must be at least 8 characters';render();return}
-  if(pw1!==pw2){err='Passwords do not match';render();return}
-  var kp=genKeypair();var addr=deriveAddr(kp.pk);
-  var encrypted=encryptKey(kp.sk,pw1);
-  wallet={address:addr,pk:toHex(kp.pk),encrypted:encrypted,created:Date.now()};
-  LS.save('wallet',wallet);unlocked=true;justCreated=true;pw1='';pw2='';err='';render();
-}
-function doUnlock(){
-  err='';var result=decryptKey(wallet.encrypted,pwu);
-  if(!result){err='Wrong password';render();setTimeout(function(){err='';render()},3000);return}
-  unlocked=true;pwu='';err='';startPolling();render();
-}
-function doDelete(){
-  if(!confirm('DELETE WALLET?\n\nYou will need to create a new address.'))return;
-  LS.del('wallet');wallet=null;unlocked=false;justCreated=false;stopPolling();
-  online=false;balance='0.0000';chainHeight=0;blocksMined=0;recentBlocks=[];proposals=[];
-  pw1='';pw2='';pwu='';err='';mainTab='dashboard';render();
-}
+function doCreate(){err='';if(pw1.length<8){err='Password must be 8+ characters';render();return}if(pw1!==pw2){err='Passwords do not match';render();return}var kp=genKeypair();var addr=deriveAddr(kp.pk);var enc=encryptKey(kp.sk,pw1);W={address:addr,pk:toHex(kp.pk),encrypted:enc,created:Date.now()};LS.save('wallet',W);unlocked=true;justCreated=true;pw1='';pw2='';err='';render()}
+function doUnlock(){err='';var r=decryptKey(W.encrypted,pwu);if(!r){err='Wrong password';render();setTimeout(function(){err='';render()},3000);return}unlocked=true;pwu='';err='';startPoll();render()}
+function doDelete(){if(!confirm('DELETE WALLET?\n\nYou will need a new address to mine.'))return;LS.del('wallet');W=null;unlocked=false;justCreated=false;stopPoll();on=false;bal='0.0000';ht=0;mined=0;blocks=[];props=[];jobs=[];tab='wallet';err='';render()}
 
-// ─── Init ───
-wallet=LS.load('wallet');
-if(wallet){unlocked=false;justCreated=false}
+W=LS.load('wallet');if(W){unlocked=false;justCreated=false}
 render();
-
 </script>
 </body>
 </html>
