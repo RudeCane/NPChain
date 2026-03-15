@@ -9,7 +9,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1a2035;border-radius:3px}
 body{background:#06080c;color:#c0c8d8;font-family:'JetBrains Mono','Fira Code',monospace;min-height:100vh;display:flex;justify-content:center}
-#app{width:100%;max-width:460px;min-height:100vh;display:flex;flex-direction:column;border-left:1px solid #141a2a;border-right:1px solid #141a2a;position:relative;overflow:hidden}
+#app{width:100%;max-width:520px;min-height:100vh;display:flex;flex-direction:column;border-left:1px solid #141a2a;border-right:1px solid #141a2a;position:relative;overflow:hidden}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #141a2a;background:#080b12}
 .logo{display:flex;align-items:center;gap:10px}
 .hex{width:30px;height:30px;background:linear-gradient(135deg,#00e5a0,#0088cc);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#06080c}
@@ -19,24 +19,30 @@ body{background:#06080c;color:#c0c8d8;font-family:'JetBrains Mono','Fira Code',m
 .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
 .status-dot.online{background:#00e5a0;box-shadow:0 0 8px #00e5a066}
 .status-dot.offline{background:#ff4444;box-shadow:0 0 8px #ff444466}
+.lock-btn{background:none;border:1px solid #1a2035;border-radius:6px;color:#5a6480;padding:5px 10px;cursor:pointer;font-family:inherit;font-size:11px}
+.lock-btn:hover{border-color:#3a4060;color:#8a90a0}
 .main{flex:1;overflow-y:auto;padding-bottom:20px}
 .screen-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px}
 .title{font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#e8ecf4;margin-bottom:6px}
 .subtitle{font-size:12px;color:#4a5470;margin-bottom:30px;text-align:center;line-height:1.6}
 .card{margin:0 16px 12px;padding:20px;background:#0c1018;border:1px solid #141a2a;border-radius:12px}
-input[type=password]{width:100%;padding:12px 14px;background:#0a0e16;border:1px solid #1a2035;border-radius:8px;color:#e0e4f0;font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;transition:border .2s}
-input:focus{border-color:#00e5a0}
-input::placeholder{color:#2a3050}
+input[type=password],input[type=text],textarea,select{width:100%;padding:10px 12px;background:#0a0e16;border:1px solid #1a2035;border-radius:8px;color:#e0e4f0;font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;transition:border .2s}
+input:focus,textarea:focus,select:focus{border-color:#00e5a0}
+input::placeholder,textarea::placeholder{color:#2a3050}
+textarea{min-height:80px;resize:vertical}
+select{appearance:none;cursor:pointer}
 .btn{width:100%;padding:14px;background:#00e5a0;color:#06080c;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .2s}
 .btn:hover{opacity:.9}
+.btn-sm{padding:8px 14px;font-size:11px;width:auto}
+.btn-approve{background:#00e5a0;color:#06080c}
+.btn-reject{background:#ff4444;color:#fff}
+.btn-abstain{background:#3a4060;color:#c0c8d8}
 .btn-ghost{width:100%;padding:12px;background:transparent;color:#5a6480;border:1px solid #1a2035;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;text-align:center;margin-top:8px}
 .btn-ghost:hover{border-color:#2a3050;color:#8a90a0}
 .btn-danger{color:#ff6b6b;border-color:#2a1a1a}
 .btn-danger:hover{border-color:#ff6b6b44}
 .btn-copy{padding:8px 16px;background:#141a2a;color:#00e5a0;border:1px solid #00e5a033;border-radius:6px;font-family:inherit;font-size:11px;cursor:pointer;font-weight:600}
 .btn-copy:hover{background:#1a2535}
-.lock-btn{background:none;border:1px solid #1a2035;border-radius:6px;color:#5a6480;padding:5px 10px;cursor:pointer;font-family:inherit;font-size:11px}
-.lock-btn:hover{border-color:#3a4060;color:#8a90a0}
 .label{font-size:10px;color:#4a5470;margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px}
 .addr-box{font-size:12px;color:#8a90a0;word-break:break-all;line-height:1.6;background:#0a0e16;padding:12px;border-radius:8px;border:1px solid #1a2035;margin:8px 0}
 .bal-amount{font-family:'Inter',sans-serif;font-size:36px;font-weight:700;color:#e8ecf4;letter-spacing:-1px}
@@ -52,20 +58,49 @@ input::placeholder{color:#2a3050}
 .block-num{color:#00e5a0;font-weight:600}
 .block-miner{color:#5a6480;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .block-miner.you{color:#00e5a0}
-.error{padding:10px 14px;background:#2a0a0a;border:1px solid #ff4444;border-radius:8px;color:#ff6666;font-size:12px;margin-bottom:12px}
+.error{padding:10px 14px;background:#2a0a0a;border:1px solid #ff4444;border-radius:8px;color:#ff6666;font-size:12px;margin:0 16px 12px}
+.success{padding:10px 14px;background:#0a2a0a;border:1px solid #00e5a0;border-radius:8px;color:#00e5a0;font-size:12px;margin:0 16px 12px}
 .fadein{animation:fi .3s ease}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .warning-box{margin:16px 0;padding:14px;background:#2a1a00;border:1px solid #f59e0b44;border-radius:8px;font-size:12px;color:#f59e0b;line-height:1.8}
 .step-num{display:inline-block;width:22px;height:22px;background:#f59e0b;color:#06080c;border-radius:50%;text-align:center;line-height:22px;font-weight:700;font-size:11px;margin-right:6px}
+/* Tab bar */
+.tab-bar{display:flex;gap:0;margin:0;border-bottom:2px solid #141a2a;background:#080b12}
+.tab{flex:1;padding:12px 8px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;font-family:inherit;border:none;background:transparent;color:#4a5470;letter-spacing:.5px;transition:all .15s;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab.active{color:#00e5a0;border-bottom-color:#00e5a0;background:#0c1018}
+.tab:hover{color:#8a90a0}
+/* Governance */
+.proposal{border:1px solid #1a2035;border-radius:12px;padding:16px;margin:0 16px 12px;background:#0c1018}
+.proposal:hover{border-color:#2a3050}
+.proposal-title{font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#e8ecf4;margin:6px 0}
+.proposal-desc{font-size:12px;color:#6a7490;line-height:1.6;margin-bottom:10px}
+.proposal-meta{display:flex;gap:12px;font-size:10px;color:#4a5470;flex-wrap:wrap;margin-bottom:8px}
+.proposal-meta span{color:#8a90a0}
+.status-badge{display:inline-block;padding:3px 8px;border-radius:10px;font-size:9px;font-weight:700;letter-spacing:.5px}
+.status-active{background:#00e5a022;color:#00e5a0;border:1px solid #00e5a044}
+.status-passed{background:#3b82f622;color:#3b82f6;border:1px solid #3b82f644}
+.status-rejected{background:#ff444422;color:#ff4444;border:1px solid #ff444444}
+.status-activated{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
+.status-expired{background:#6a749022;color:#6a7490;border:1px solid #6a749044}
+.vote-bar{height:20px;background:#141a2a;border-radius:10px;overflow:hidden;display:flex;margin:6px 0}
+.vote-bar .approve{background:#00e5a0;transition:width .3s}
+.vote-bar .reject{background:#ff4444;transition:width .3s}
+.vote-bar .abstain{background:#3a4060;transition:width .3s}
+.vote-stats{display:flex;justify-content:space-between;font-size:10px}
+.vote-stats .at{color:#00e5a0}.vote-stats .rt{color:#ff4444}.vote-stats .bt{color:#6a7490}
+.vote-actions{display:flex;gap:6px;margin-top:10px}
+.vote-actions button{flex:1;border:none;font-family:inherit;cursor:pointer;border-radius:6px}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px}
+.config-grid .key{color:#4a5470}
+.config-grid .val{color:#00e5a0;text-align:right}
+.empty{text-align:center;padding:30px 16px;color:#3a4060;font-size:13px}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
 
-// ═══════════════════════════════════════════════════════════════
-//  SHA3-256 — matches NPChain hashing
-// ═══════════════════════════════════════════════════════════════
+// ═══ SHA3-256 ═══
 var RC=[0x0000000000000001n,0x0000000000008082n,0x800000000000808an,0x8000000080008000n,0x000000000000808bn,0x0000000080000001n,0x8000000080008081n,0x8000000000008009n,0x000000000000008an,0x0000000000000088n,0x0000000080008009n,0x000000008000000an,0x000000008000808bn,0x800000000000008bn,0x8000000000008089n,0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,0x000000000000800an,0x800000008000000an,0x8000000080008081n,0x8000000000008080n,0x0000000080000001n,0x8000000080008008n];
 var ROT=[[0,1,62,28,27],[36,44,6,55,20],[3,10,43,25,39],[41,45,15,21,8],[18,2,61,56,14]];
 var Mk=(1n<<64n)-1n;
@@ -73,31 +108,22 @@ function rl(x,n){return((x<<BigInt(n))|(x>>BigInt(64-n)))&Mk}
 function kf(s){for(var r=0;r<24;r++){var C=[],D=[],B=[];for(var x=0;x<5;x++)C[x]=s[x]^s[x+5]^s[x+10]^s[x+15]^s[x+20];for(x=0;x<5;x++)D[x]=C[(x+4)%5]^rl(C[(x+1)%5],1);for(var i=0;i<25;i++)s[i]=(s[i]^D[i%5])&Mk;for(x=0;x<5;x++)for(var y=0;y<5;y++)B[y+5*((2*x+3*y)%5)]=rl(s[x+5*y],ROT[y][x]);for(x=0;x<5;x++)for(y=0;y<5;y++)s[x+5*y]=(B[x+5*y]^((~B[(x+1)%5+5*y]&Mk)&B[(x+2)%5+5*y]))&Mk;s[0]=(s[0]^RC[r])&Mk}}
 function sha3(data){var rate=136,st=Array(25).fill(0n);var b=typeof data==='string'?new TextEncoder().encode(data):new Uint8Array(data);var p=0;for(var i=0;i<b.length;i++){st[p>>3]=(st[p>>3]^(BigInt(b[i])<<BigInt((p%8)*8)))&Mk;p++;if(p===rate){kf(st);p=0}}st[p>>3]=(st[p>>3]^(0x06n<<BigInt((p%8)*8)))&Mk;st[(rate-1)>>3]=(st[(rate-1)>>3]^(0x80n<<BigInt(((rate-1)%8)*8)))&Mk;kf(st);var o=new Uint8Array(32);for(i=0;i<32;i++)o[i]=Number((st[i>>3]>>BigInt((i%8)*8))&0xFFn);return o}
 function toHex(b){return Array.from(b).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}
-
-// ═══════════════════════════════════════════════════════════════
-//  Crypto: keypair, encryption, address
-// ═══════════════════════════════════════════════════════════════
 function genKeypair(){var sk=crypto.getRandomValues(new Uint8Array(64));var pk=sha3(sk);return{pk:pk,sk:sk}}
 function deriveAddr(pk){return'cert1'+toHex(sha3(pk)).substring(0,40)}
 function deriveKey(pw,salt){var pb=new TextEncoder().encode(pw);var c=new Uint8Array(pb.length+salt.length);c.set(pb);c.set(salt,pb.length);var k=sha3(c);for(var i=0;i<5000;i++){var r=new Uint8Array(36);r.set(k);r[32]=i&0xff;r[33]=(i>>8)&0xff;r[34]=(i>>16)&0xff;r[35]=(i>>24)&0xff;k=sha3(r)}return k}
 function encryptKey(sk,pw){var salt=crypto.getRandomValues(new Uint8Array(16));var key=deriveKey(pw,salt);var stream=sha3(key);var enc=new Uint8Array(sk.length);for(var i=0;i<sk.length;i++)enc[i]=sk[i]^stream[i%32];var check=sha3(key);return{salt:toHex(salt),enc:toHex(enc),check:toHex(check)}}
-function decryptKey(data,pw){var salt=new Uint8Array(data.salt.match(/.{2}/g).map(function(b){return parseInt(b,16)}));var key=deriveKey(pw,salt);if(toHex(sha3(key))!==data.check)return null;var eb=new Uint8Array(data.enc.match(/.{2}/g).map(function(b){return parseInt(b,16)}));var stream=sha3(key);var sk=new Uint8Array(eb.length);for(var i=0;i<eb.length;i++)sk[i]=eb[i]^stream[i%32];return sk}
+function decryptKey(data,pw){var salt=new Uint8Array(data.salt.match(/.{2}/g).map(function(b){return parseInt(b,16)}));var key=deriveKey(pw,salt);if(toHex(sha3(key))!==data.check)return null;return true}
 
-// ═══════════════════════════════════════════════════════════════
-//  Storage
-// ═══════════════════════════════════════════════════════════════
-var LS={
-  save:function(k,v){try{localStorage.setItem('npc3_'+k,JSON.stringify(v))}catch(e){}},
-  load:function(k){try{var v=localStorage.getItem('npc3_'+k);return v?JSON.parse(v):null}catch(e){return null}},
-  del:function(k){try{localStorage.removeItem('npc3_'+k)}catch(e){}}
-};
-
+// ═══ State ═══
+var LS={save:function(k,v){try{localStorage.setItem('npc3_'+k,JSON.stringify(v))}catch(e){}},load:function(k){try{var v=localStorage.getItem('npc3_'+k);return v?JSON.parse(v):null}catch(e){return null}},del:function(k){try{localStorage.removeItem('npc3_'+k)}catch(e){}}};
 var RPC='http://localhost:18333';
-var wallet=null; // {address, pk, encrypted, created}
-var unlocked=false;
-var pw1='',pw2='',pwu='',err='';
+var wallet=null,unlocked=false,pw1='',pw2='',pwu='',err='',suc='';
 var copied=false,cmdCopied=false,justCreated=false;
+var mainTab='dashboard'; // dashboard, governance, explorer
+var govTab='proposals'; // proposals, submit, rules
 var online=false,balance='0.0000',chainHeight=0,chainDiff=0,chainSupply='0',chainTip='',blocksMined=0,recentBlocks=[];
+var proposals=[],govConfig={};
+var gForm={type:'general',title:'',description:'',param_key:'',param_value:''};
 var pollTimer=null;
 
 function fetchData(){
@@ -106,23 +132,42 @@ function fetchData(){
   fetch(RPC+'/api/v1/status').then(function(r){return r.json()}).then(function(d){chainHeight=d.height||0;chainDiff=d.difficulty||0;chainSupply=(d.total_supply||0).toFixed(2);chainTip=d.tip_hash||'';online=true;render()}).catch(function(){});
   fetch(RPC+'/api/v1/blocks').then(function(r){return r.json()}).then(function(d){recentBlocks=d.blocks||[];render()}).catch(function(){});
   fetch(RPC+'/api/v1/miner').then(function(r){return r.json()}).then(function(d){blocksMined=d.blocks_mined||0;render()}).catch(function(){});
+  fetch(RPC+'/api/v1/governance/proposals').then(function(r){return r.json()}).then(function(d){proposals=d.proposals||[];render()}).catch(function(){});
+  fetch(RPC+'/api/v1/governance/config').then(function(r){return r.json()}).then(function(d){govConfig=d;render()}).catch(function(){});
 }
-function startPolling(){if(pollTimer)clearInterval(pollTimer);fetchData();pollTimer=setInterval(fetchData,3000)}
+function startPolling(){if(pollTimer)clearInterval(pollTimer);fetchData();pollTimer=setInterval(fetchData,4000)}
 function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}}
 
 function h(tag,props){var el=document.createElement(tag);var ch=Array.prototype.slice.call(arguments,2);if(props)Object.keys(props).forEach(function(k){if(k.indexOf('on')===0)el[k]=props[k];else if(k==='className')el.className=props[k];else if(k==='style'&&typeof props[k]==='object')Object.assign(el.style,props[k]);else el.setAttribute(k,props[k])});ch.forEach(function(c){if(Array.isArray(c))c.forEach(function(cc){if(cc!=null)el.append(typeof cc==='string'||typeof cc==='number'?document.createTextNode(String(cc)):cc)});else if(c!=null&&c!==false)el.append(typeof c==='string'||typeof c==='number'?document.createTextNode(String(c)):c)});return el}
-
 function copyText(text,which){navigator.clipboard&&navigator.clipboard.writeText(text);if(which==='addr')copied=true;else cmdCopied=true;render();setTimeout(function(){copied=false;cmdCopied=false;render()},2000)}
+
+function submitProposal(){
+  if(!wallet){err='No wallet';render();return}
+  if(!gForm.title){err='Title required';render();return}
+  if(!gForm.description){err='Description required';render();return}
+  fetch(RPC+'/api/v1/governance/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({author:wallet.address,type:gForm.type,title:gForm.title,description:gForm.description,param_key:gForm.param_key,param_value:gForm.param_value})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.ok){suc='Proposal #'+d.proposal_id+' submitted!';err='';gForm={type:'general',title:'',description:'',param_key:'',param_value:''};govTab='proposals';fetchData()}
+      else{err=d.error||'Failed';suc=''}
+      render();setTimeout(function(){suc='';err='';render()},5000);
+    }).catch(function(){err='Network error';render()});
+}
+function castVote(pid,choice){
+  if(!wallet){err='No wallet';render();return}
+  fetch(RPC+'/api/v1/governance/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({proposal_id:pid,voter:wallet.address,choice:choice})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.ok){suc='Vote: '+choice+' ('+d.voting_power.toFixed(0)+' Certs)';err='';fetchData()}
+      else{err=d.error||'Failed';suc=''}
+      render();setTimeout(function(){suc='';err='';render()},5000);
+    }).catch(function(){err='Network error';render()});
+}
 
 function render(){
   var app=document.getElementById('app');
   app.innerHTML='';
 
   // Topbar
-  var lockBtn=null;
-  if(wallet&&unlocked){
-    lockBtn=h('button',{className:'lock-btn',onclick:function(){unlocked=false;stopPolling();online=false;balance='0.0000';render()}},'Lock');
-  }
+  var lockBtn=wallet&&unlocked?h('button',{className:'lock-btn',onclick:function(){unlocked=false;stopPolling();online=false;balance='0.0000';render()}},'Lock'):null;
   app.append(h('div',{className:'topbar'},
     h('div',{className:'logo'},h('div',{className:'hex'},'NP'),h('div',{className:'logo-text'},'NPChain')),
     h('div',{style:{display:'flex',alignItems:'center',gap:'10px'}},
@@ -135,24 +180,19 @@ function render(){
   var main=h('div',{className:'main'});
   app.append(main);
 
-  // ─── WELCOME: CREATE WALLET ───
+  // ─── CREATE WALLET ───
   if(!wallet){
     main.append(h('div',{className:'screen-center fadein'},
       h('div',{className:'hex lg',style:{marginBottom:'20px'}},'NP'),
       h('div',{className:'title'},'NPChain Wallet'),
       h('div',{className:'subtitle'},'Create a password-protected wallet.',h('br'),'You need this address to start mining.'),
       h('div',{style:{width:'100%',maxWidth:'340px'}},
-        err?h('div',{className:'error'},err):null,
+        err?h('div',{className:'error',style:{margin:'0 0 12px'}},err):null,
         h('input',{type:'password',placeholder:'Create password (8+ characters)',oninput:function(e){pw1=e.target.value}}),
         h('input',{type:'password',placeholder:'Confirm password',oninput:function(e){pw2=e.target.value},onkeydown:function(e){if(e.key==='Enter')doCreate()}}),
-        h('button',{className:'btn',onclick:doCreate},'Create Wallet'),
-        h('div',{style:{height:'12px'}}),
-        h('div',{style:{fontSize:'11px',color:'#3a4060',textAlign:'center',lineHeight:'1.8'}},
-          'Your keys are encrypted with your password.',h('br'),'Nothing leaves your browser. Keep your password safe.'
-        )
+        h('button',{className:'btn',onclick:doCreate},'Create Wallet')
       )
-    ));
-    return;
+    ));return;
   }
 
   // ─── UNLOCK ───
@@ -162,16 +202,15 @@ function render(){
       h('div',{className:'title'},'Welcome Back'),
       h('div',{style:{fontSize:'12px',color:'#5a6480',marginBottom:'30px',textAlign:'center',wordBreak:'break-all'}},wallet.address),
       h('div',{style:{width:'100%',maxWidth:'340px'}},
-        err?h('div',{className:'error'},err):null,
-        h('input',{type:'password',placeholder:'Enter password',autofocus:'true',oninput:function(e){pwu=e.target.value},onkeydown:function(e){if(e.key==='Enter')doUnlock()}}),
+        err?h('div',{className:'error',style:{margin:'0 0 12px'}},err):null,
+        h('input',{type:'password',placeholder:'Enter password',oninput:function(e){pwu=e.target.value},onkeydown:function(e){if(e.key==='Enter')doUnlock()}}),
         h('button',{className:'btn',onclick:doUnlock,style:{marginBottom:'10px'}},'Unlock'),
         h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')
       )
-    ));
-    return;
+    ));return;
   }
 
-  // ─── JUST CREATED: SHOW ADDRESS + MINING INSTRUCTIONS ───
+  // ─── JUST CREATED ───
   if(justCreated){
     var cmd='./npchain_testnet.exe --address '+wallet.address;
     main.append(h('div',{className:'screen-center fadein'},
@@ -179,104 +218,187 @@ function render(){
       h('div',{style:{width:'100%',maxWidth:'380px'}},
         h('div',{className:'label'},'YOUR MINING ADDRESS'),
         h('div',{className:'addr-box'},wallet.address),
-        h('div',{style:{textAlign:'center',margin:'10px 0'}},
-          h('button',{className:'btn-copy',onclick:function(){copyText(wallet.address,'addr')}},copied?'Copied!':'Copy Address')
-        ),
+        h('div',{style:{textAlign:'center',margin:'10px 0'}},h('button',{className:'btn-copy',onclick:function(){copyText(wallet.address,'addr')}},copied?'Copied!':'Copy Address')),
         h('div',{className:'warning-box'},
           h('span',{className:'step-num'},'1'),' Copy your address above',h('br'),
           h('span',{className:'step-num'},'2'),' Open MSYS2 UCRT64 terminal',h('br'),
           h('span',{className:'step-num'},'3'),' Paste the mining command below',h('br'),
-          h('span',{className:'step-num'},'4'),' Come back here to see your balance'
-        ),
+          h('span',{className:'step-num'},'4'),' Come back here to see your balance'),
         h('div',{className:'label',style:{marginTop:'16px'}},'MINING COMMAND'),
-        h('div',{className:'mine-cmd'},cmd,
-          h('button',{className:'cbtn',onclick:function(){copyText(cmd,'cmd')}},cmdCopied?'Copied!':'Copy')
-        ),
-        h('div',{style:{marginTop:'6px',fontSize:'11px',color:'#4a5470',lineHeight:'1.6'}},
-          'To join the public testnet, add: --seed SEED_IP:19333'
-        ),
-        h('button',{className:'btn',style:{marginTop:'20px'},onclick:function(){
-          justCreated=false;
-          startPolling();
-          render();
-        }},'Go to Dashboard')
+        h('div',{className:'mine-cmd'},cmd,h('button',{className:'cbtn',onclick:function(){copyText(cmd,'cmd')}},cmdCopied?'Copied!':'Copy')),
+        h('button',{className:'btn',style:{marginTop:'20px'},onclick:function(){justCreated=false;startPolling();render()}},'Go to Dashboard')
       )
-    ));
-    return;
+    ));return;
   }
 
-  // ─── DASHBOARD ───
-  main.append(h('div',{className:'card',style:{textAlign:'center',paddingTop:'28px',paddingBottom:'28px'}},
-    h('div',{className:'label'},'BALANCE'),
-    h('div',{style:{marginTop:'8px'}},
-      h('span',{className:'bal-amount'},balance),
-      h('span',{className:'bal-sym'},'CERTS')
-    ),
-    h('div',{style:{marginTop:'12px',fontSize:'11px',color:online?'#00e5a0':'#ff6b6b'}},
-      online?'Node connected':'Node offline \u2014 start mining to see balance'
-    )
-  ));
+  // ─── TAB BAR ───
+  app.insertBefore(h('div',{className:'tab-bar'},
+    h('button',{className:'tab'+(mainTab==='dashboard'?' active':''),onclick:function(){mainTab='dashboard';render()}},'Wallet'),
+    h('button',{className:'tab'+(mainTab==='governance'?' active':''),onclick:function(){mainTab='governance';render()}},'Governance'+(proposals.length>0?' ('+proposals.length+')':'')),
+    h('button',{className:'tab'+(mainTab==='explorer'?' active':''),onclick:function(){mainTab='explorer';render()}},'Explorer')
+  ),main);
 
-  // Address
-  main.append(h('div',{className:'card'},
-    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}},
-      h('div',{className:'label',style:{marginBottom:'0'}},'YOUR ADDRESS'),
-      h('button',{className:'btn-copy',onclick:function(){copyText(wallet.address,'addr')}},copied?'Copied!':'Copy')
-    ),
-    h('div',{style:{fontSize:'12px',color:'#8a90a0',wordBreak:'break-all',lineHeight:'1.6'}},wallet.address)
-  ));
+  if(err)main.append(h('div',{className:'error'},err));
+  if(suc)main.append(h('div',{className:'success'},suc));
 
-  // Mining command
-  var cmd='./npchain_testnet.exe --address '+wallet.address;
-  main.append(h('div',{className:'card'},
-    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}},
-      h('div',{className:'label',style:{marginBottom:'0'}},'MINING COMMAND'),
-      h('button',{className:'btn-copy',onclick:function(){copyText(cmd,'cmd')}},cmdCopied?'Copied!':'Copy')
-    ),
-    h('div',{style:{fontSize:'11px',color:'#00e5a0',wordBreak:'break-all',lineHeight:'1.6'}},cmd)
-  ));
-
-  // Chain stats
-  if(online){
+  // ═══════════ DASHBOARD TAB ═══════════
+  if(mainTab==='dashboard'){
+    main.append(h('div',{className:'card',style:{textAlign:'center',paddingTop:'28px',paddingBottom:'28px'}},
+      h('div',{className:'label'},'BALANCE'),
+      h('div',{style:{marginTop:'8px'}},h('span',{className:'bal-amount'},balance),h('span',{className:'bal-sym'},'CERTS')),
+      h('div',{style:{marginTop:'12px',fontSize:'11px',color:online?'#00e5a0':'#ff6b6b'}},online?'Node connected':'Node offline')
+    ));
     main.append(h('div',{className:'card'},
-      h('div',{className:'label',style:{marginBottom:'12px'}},'CHAIN STATUS'),
-      h('div',{className:'detail'},
-        'Height: ',h('span',{},String(chainHeight)),h('br'),
-        'Difficulty: ',h('span',{},String(chainDiff)),h('br'),
-        'Total Supply: ',h('span',{},chainSupply+' Certs'),h('br'),
-        'Blocks You Mined: ',h('span',{className:'hl'},String(blocksMined)),h('br'),
-        'Tip: ',h('span',{},chainTip?(chainTip.substring(0,24)+'...'):'')
-      )
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}},
+        h('div',{className:'label',style:{marginBottom:'0'}},'YOUR ADDRESS'),
+        h('button',{className:'btn-copy',onclick:function(){copyText(wallet.address,'addr')}},copied?'Copied!':'Copy')),
+      h('div',{style:{fontSize:'12px',color:'#8a90a0',wordBreak:'break-all',lineHeight:'1.6'}},wallet.address)
     ));
-  }
-
-  // Recent blocks
-  if(recentBlocks.length>0){
-    var rows=recentBlocks.slice(0,15).map(function(b){
-      return h('div',{className:'block-row'},
-        h('span',{className:'block-num'},'#'+b.height),
-        h('span',{className:'block-miner'+(b.miner===wallet.address?' you':'')},
-          b.miner===wallet.address?'You mined!':(b.miner||'').substring(0,20)+'...'
-        ),
-        h('span',{style:{color:'#4a5470',fontSize:'10px'}},(b.reward/1000000).toFixed(0)+' Certs')
-      );
-    });
+    var cmd='./npchain_testnet.exe --address '+wallet.address;
     main.append(h('div',{className:'card'},
-      h('div',{className:'label',style:{marginBottom:'12px'}},'RECENT BLOCKS'),
-      rows
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}},
+        h('div',{className:'label',style:{marginBottom:'0'}},'MINING COMMAND'),
+        h('button',{className:'btn-copy',onclick:function(){copyText(cmd,'cmd')}},cmdCopied?'Copied!':'Copy')),
+      h('div',{style:{fontSize:'11px',color:'#00e5a0',wordBreak:'break-all',lineHeight:'1.6'}},cmd)
     ));
+    if(online){
+      main.append(h('div',{className:'card'},
+        h('div',{className:'label',style:{marginBottom:'12px'}},'CHAIN STATUS'),
+        h('div',{className:'detail'},
+          'Height: ',h('span',{},String(chainHeight)),h('br'),
+          'Difficulty: ',h('span',{},String(chainDiff)),h('br'),
+          'Total Supply: ',h('span',{},chainSupply+' Certs'),h('br'),
+          'Blocks You Mined: ',h('span',{className:'hl'},String(blocksMined)),h('br'),
+          'Tip: ',h('span',{},chainTip?(chainTip.substring(0,24)+'...'):''))
+      ));
+    }
+    if(recentBlocks.length>0){
+      var rows=recentBlocks.slice(0,10).map(function(b){
+        return h('div',{className:'block-row'},
+          h('span',{className:'block-num'},'#'+b.height),
+          h('span',{className:'block-miner'+(b.miner===wallet.address?' you':'')},b.miner===wallet.address?'You!':(b.miner||'').substring(0,18)+'...'),
+          h('span',{style:{color:'#4a5470',fontSize:'10px'}},(b.reward/1000000).toFixed(0)+' Certs'));
+      });
+      main.append(h('div',{className:'card'},h('div',{className:'label',style:{marginBottom:'12px'}},'RECENT BLOCKS'),rows));
+    }
+    main.append(h('div',{style:{padding:'20px 16px'}},h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')));
   }
 
-  // Navigation links
-  main.append(h('div',{style:{display:'flex',gap:'8px',padding:'0 16px',marginBottom:'12px'}},
-    h('a',{href:'governance.html',style:{flex:'1',padding:'12px',background:'#141a2a',border:'1px solid #1a2035',borderRadius:'8px',color:'#00e5a0',textDecoration:'none',textAlign:'center',fontSize:'12px',fontWeight:'600',fontFamily:'inherit'}},'Governance & Voting'),
-    h('a',{href:'explorer.html',style:{flex:'1',padding:'12px',background:'#141a2a',border:'1px solid #1a2035',borderRadius:'8px',color:'#5a6480',textDecoration:'none',textAlign:'center',fontSize:'12px',fontWeight:'600',fontFamily:'inherit'}},'Block Explorer')
-  ));
+  // ═══════════ GOVERNANCE TAB ═══════════
+  if(mainTab==='governance'){
+    // Sub-tabs
+    main.append(h('div',{style:{display:'flex',gap:'4px',padding:'12px 16px'}},
+      h('button',{className:'tab'+(govTab==='proposals'?' active':''),style:{flex:'1',borderBottom:'none',margin:'0',fontSize:'11px'},onclick:function(){govTab='proposals';render()}},'Proposals'),
+      h('button',{className:'tab'+(govTab==='submit'?' active':''),style:{flex:'1',borderBottom:'none',margin:'0',fontSize:'11px'},onclick:function(){govTab='submit';render()}},'Submit'),
+      h('button',{className:'tab'+(govTab==='rules'?' active':''),style:{flex:'1',borderBottom:'none',margin:'0',fontSize:'11px'},onclick:function(){govTab='rules';render()}},'Rules')
+    ));
 
-  // Delete wallet
-  main.append(h('div',{style:{padding:'20px 16px'}},
-    h('button',{className:'btn-ghost btn-danger',onclick:doDelete},'Delete Wallet')
-  ));
+    if(govTab==='proposals'){
+      if(proposals.length===0){
+        main.append(h('div',{className:'empty'},'No proposals yet. Be the first!'));
+      } else {
+        proposals.slice().sort(function(a,b){if(a.status==='active'&&b.status!=='active')return -1;if(b.status==='active'&&a.status!=='active')return 1;return b.id-a.id}).forEach(function(p){
+          var tv=p.votes_approve+p.votes_reject+p.votes_abstain;
+          var ap=tv>0?(p.votes_approve/tv*100):0,rp=tv>0?(p.votes_reject/tv*100):0,bp=tv>0?(p.votes_abstain/tv*100):0;
+          var bl=p.vote_end_height>chainHeight?(p.vote_end_height-chainHeight):0;
+          var cls={active:'status-active',passed:'status-passed',rejected:'status-rejected',activated:'status-activated',expired:'status-expired'};
+          var card=h('div',{className:'proposal'},
+            h('div',{style:{display:'flex',justifyContent:'space-between'}},
+              h('span',{style:{fontSize:'10px',color:'#4a5470'}},'NIP-'+String(p.id).padStart(3,'0')),
+              h('span',{className:'status-badge '+(cls[p.status]||'')},p.status.toUpperCase())),
+            h('div',{className:'proposal-title'},p.title),
+            h('div',{className:'proposal-desc'},p.description),
+            h('div',{className:'proposal-meta'},
+              h('div',{},'Author: ',h('span',{},p.author.substring(0,16)+'...')),
+              h('div',{},'Approval: ',h('span',{style:{color:p.approval_rate>=75?'#00e5a0':'#ff6b6b'}},p.approval_rate.toFixed(1)+'%')),
+              p.status==='active'?h('div',{},'Blocks left: ',h('span',{style:{color:'#f59e0b'}},String(bl))):null),
+            h('div',{className:'vote-stats'},
+              h('span',{className:'at'},'Approve: '+p.votes_approve.toFixed(0)),
+              h('span',{className:'rt'},'Reject: '+p.votes_reject.toFixed(0)),
+              h('span',{className:'bt'},'Abstain: '+p.votes_abstain.toFixed(0))),
+            h('div',{className:'vote-bar'},
+              h('div',{className:'approve',style:{width:ap+'%'}}),
+              h('div',{className:'reject',style:{width:rp+'%'}}),
+              h('div',{className:'abstain',style:{width:bp+'%'}}))
+          );
+          if(p.status==='active'){
+            var pid=p.id;
+            card.append(h('div',{className:'vote-actions'},
+              h('button',{className:'btn-sm btn-approve',onclick:function(){castVote(pid,'approve')}},'Approve'),
+              h('button',{className:'btn-sm btn-reject',onclick:function(){castVote(pid,'reject')}},'Reject'),
+              h('button',{className:'btn-sm btn-abstain',onclick:function(){castVote(pid,'abstain')}},'Abstain')));
+          }
+          main.append(card);
+        });
+      }
+    }
+    if(govTab==='submit'){
+      main.append(h('div',{className:'card'},
+        h('div',{className:'label'},'PROPOSAL TYPE'),
+        h('select',{onchange:function(e){gForm.type=e.target.value;render()}},
+          h('option',{value:'general'},'General'),h('option',{value:'param_change'},'Parameter Change'),
+          h('option',{value:'crypto_upgrade'},'Crypto Upgrade'),h('option',{value:'fee_change'},'Fee Change'),
+          h('option',{value:'emission_change'},'Emission Change')),
+        h('div',{className:'label'},'TITLE'),
+        h('input',{type:'text',placeholder:'Proposal title',value:gForm.title,oninput:function(e){gForm.title=e.target.value}}),
+        h('div',{className:'label'},'DESCRIPTION'),
+        h('textarea',{placeholder:'Explain your proposal...',value:gForm.description,oninput:function(e){gForm.description=e.target.value}}),
+        gForm.type==='param_change'?[
+          h('div',{className:'label'},'PARAMETER'),
+          h('input',{type:'text',placeholder:'e.g. block_time',value:gForm.param_key,oninput:function(e){gForm.param_key=e.target.value}}),
+          h('div',{className:'label'},'NEW VALUE'),
+          h('input',{type:'text',placeholder:'e.g. 30',value:gForm.param_value,oninput:function(e){gForm.param_value=e.target.value}})
+        ]:null,
+        h('button',{className:'btn',onclick:submitProposal},'Submit Proposal'),
+        h('div',{style:{fontSize:'10px',color:'#4a5470',marginTop:'8px',textAlign:'center'}},'Requires ~47,564 Certs minimum balance')
+      ));
+    }
+    if(govTab==='rules'){
+      main.append(h('div',{className:'card'},
+        h('div',{className:'label',style:{marginBottom:'12px'}},'VOTING RULES'),
+        h('div',{className:'config-grid'},
+          h('div',{className:'key'},'Voting Period'),h('div',{className:'val'},(govConfig.vote_period_blocks||240)+' blocks'),
+          h('div',{className:'key'},'Activation Delay'),h('div',{className:'val'},(govConfig.activation_delay||120)+' blocks'),
+          h('div',{className:'key'},'Approval Threshold'),h('div',{className:'val'},(govConfig.approval_threshold||0.75)*100+'%'),
+          h('div',{className:'key'},'Min Participation'),h('div',{className:'val'},(govConfig.participation_min||0.70)*100+'%'),
+          h('div',{className:'key'},'Min to Propose'),h('div',{className:'val'},(govConfig.min_proposer_balance||47564).toFixed(0)+' Certs'),
+          h('div',{className:'key'},'Emergency Threshold'),h('div',{className:'val'},(govConfig.emergency_threshold||0.9)*100+'%')
+        )
+      ));
+      main.append(h('div',{className:'card',style:{background:'#0a1a10',border:'1px solid #00e5a033'}},
+        h('div',{style:{fontSize:'13px',color:'#c0c8d8',lineHeight:'2.2',textAlign:'center'}},
+          h('span',{style:{fontSize:'24px',fontWeight:'700',color:'#f59e0b'}},'70%'),' of miners must vote',h('br'),
+          h('span',{style:{fontSize:'24px',fontWeight:'700',color:'#00e5a0'}},'75%'),' approval to pass',h('br'),
+          h('span',{style:{fontSize:'24px',fontWeight:'700',color:'#ff4444'}},'90%'),' for emergencies'
+        )
+      ));
+    }
+  }
+
+  // ═══════════ EXPLORER TAB ═══════════
+  if(mainTab==='explorer'){
+    if(online){
+      main.append(h('div',{className:'card'},
+        h('div',{className:'label',style:{marginBottom:'12px'}},'CHAIN STATUS'),
+        h('div',{className:'detail'},
+          'Height: ',h('span',{},String(chainHeight)),h('br'),
+          'Difficulty: ',h('span',{},String(chainDiff)),h('br'),
+          'Total Supply: ',h('span',{},chainSupply+' Certs'),h('br'),
+          'Tip: ',h('span',{},chainTip?(chainTip.substring(0,32)+'...'):''))
+      ));
+    }
+    if(recentBlocks.length>0){
+      var rows=recentBlocks.map(function(b){
+        return h('div',{className:'block-row'},
+          h('span',{className:'block-num'},'#'+b.height),
+          h('span',{className:'block-miner'+(b.miner===wallet.address?' you':'')},b.miner===wallet.address?'You!':(b.miner||'').substring(0,20)+'...'),
+          h('span',{style:{color:'#4a5470',fontSize:'10px'}},(b.reward/1000000).toFixed(0)+' Certs'));
+      });
+      main.append(h('div',{className:'card'},h('div',{className:'label',style:{marginBottom:'12px'}},'ALL BLOCKS'),rows));
+    } else {
+      main.append(h('div',{className:'empty'},'No blocks yet. Start mining!'));
+    }
+  }
 }
 
 // ─── Actions ───
@@ -284,35 +406,21 @@ function doCreate(){
   err='';
   if(pw1.length<8){err='Password must be at least 8 characters';render();return}
   if(pw1!==pw2){err='Passwords do not match';render();return}
-  var kp=genKeypair();
-  var addr=deriveAddr(kp.pk);
+  var kp=genKeypair();var addr=deriveAddr(kp.pk);
   var encrypted=encryptKey(kp.sk,pw1);
   wallet={address:addr,pk:toHex(kp.pk),encrypted:encrypted,created:Date.now()};
-  LS.save('wallet',wallet);
-  unlocked=true;
-  justCreated=true;
-  pw1='';pw2='';err='';
-  render();
+  LS.save('wallet',wallet);unlocked=true;justCreated=true;pw1='';pw2='';err='';render();
 }
-
 function doUnlock(){
-  err='';
-  var result=decryptKey(wallet.encrypted,pwu);
+  err='';var result=decryptKey(wallet.encrypted,pwu);
   if(!result){err='Wrong password';render();setTimeout(function(){err='';render()},3000);return}
-  unlocked=true;
-  pwu='';err='';
-  startPolling();
-  render();
+  unlocked=true;pwu='';err='';startPolling();render();
 }
-
 function doDelete(){
-  if(!confirm('DELETE WALLET?\n\nThis permanently erases your keys.\nYou will need to create a new address to mine.\nMake sure you have backed up your address.'))return;
-  LS.del('wallet');
-  wallet=null;unlocked=false;justCreated=false;
-  stopPolling();
-  online=false;balance='0.0000';chainHeight=0;blocksMined=0;recentBlocks=[];
-  pw1='';pw2='';pwu='';err='';
-  render();
+  if(!confirm('DELETE WALLET?\n\nYou will need to create a new address.'))return;
+  LS.del('wallet');wallet=null;unlocked=false;justCreated=false;stopPolling();
+  online=false;balance='0.0000';chainHeight=0;blocksMined=0;recentBlocks=[];proposals=[];
+  pw1='';pw2='';pwu='';err='';mainTab='dashboard';render();
 }
 
 // ─── Init ───
