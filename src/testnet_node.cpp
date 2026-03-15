@@ -40,6 +40,7 @@
 #include <map>
 #include <mutex>
 #include <functional>
+#include <fstream>
 
 using namespace npchain;
 using namespace npchain::crypto;
@@ -294,6 +295,178 @@ struct ChainState {
         auto it = balances.find(addr);
         return (it != balances.end()) ? it->second : 0;
     }
+
+    // ─── Persistence: Save chain to disk ───
+    bool save_to_disk(const std::string& path) const {
+        std::ofstream f(path, std::ios::binary);
+        if (!f) return false;
+
+        // Header: magic + version + block count
+        const char magic[] = "NPCB";  // NPChain Blocks
+        uint32_t version = 1;
+        uint64_t count = blocks.size();
+        f.write(magic, 4);
+        f.write(reinterpret_cast<const char*>(&version), 4);
+        f.write(reinterpret_cast<const char*>(&count), 8);
+
+        // Write each block
+        for (const auto& b : blocks) {
+            // Fixed fields
+            f.write(reinterpret_cast<const char*>(&b.version), 4);
+            f.write(reinterpret_cast<const char*>(&b.height), 8);
+            f.write(reinterpret_cast<const char*>(b.prev_hash.data()), 32);
+            f.write(reinterpret_cast<const char*>(b.merkle_root.data()), 32);
+            f.write(reinterpret_cast<const char*>(&b.timestamp), 8);
+            f.write(reinterpret_cast<const char*>(&b.difficulty), 4);
+            f.write(reinterpret_cast<const char*>(&b.num_variables), 4);
+            f.write(reinterpret_cast<const char*>(&b.num_clauses), 4);
+            f.write(reinterpret_cast<const char*>(b.witness_hash.data()), 32);
+            f.write(reinterpret_cast<const char*>(&b.reward), 8);
+            f.write(reinterpret_cast<const char*>(b.hash.data()), 32);
+
+            // Witness (variable length)
+            uint32_t wsize = static_cast<uint32_t>(b.witness.size());
+            f.write(reinterpret_cast<const char*>(&wsize), 4);
+            if (wsize > 0) {
+                Bytes wbits((wsize + 7) / 8, 0);
+                for (uint32_t i = 0; i < wsize; ++i)
+                    if (i < b.witness.size() && b.witness[i])
+                        wbits[i / 8] |= (1 << (i % 8));
+                f.write(reinterpret_cast<const char*>(wbits.data()), wbits.size());
+            }
+
+            // Miner address (variable length)
+            uint16_t alen = static_cast<uint16_t>(b.miner_address.size());
+            f.write(reinterpret_cast<const char*>(&alen), 2);
+            f.write(b.miner_address.c_str(), alen);
+        }
+
+        f.close();
+        return true;
+    }
+
+    // ─── Persistence: Load chain from disk ───
+    bool load_from_disk(const std::string& path) {
+        std::ifstream f(path, std::ios::binary);
+        if (!f) return false;
+
+        // Read header
+        char magic[4];
+        uint32_t version;
+        uint64_t count;
+        f.read(magic, 4);
+        if (std::string(magic, 4) != "NPCB") return false;
+        f.read(reinterpret_cast<char*>(&version), 4);
+        if (version != 1) return false;
+        f.read(reinterpret_cast<char*>(&count), 8);
+
+        // Read blocks
+        blocks.clear();
+        total_supply = 0;
+        balances.clear();
+
+        for (uint64_t i = 0; i < count; ++i) {
+            Block b;
+            f.read(reinterpret_cast<char*>(&b.version), 4);
+            f.read(reinterpret_cast<char*>(&b.height), 8);
+            f.read(reinterpret_cast<char*>(b.prev_hash.data()), 32);
+            f.read(reinterpret_cast<char*>(b.merkle_root.data()), 32);
+            f.read(reinterpret_cast<char*>(&b.timestamp), 8);
+            f.read(reinterpret_cast<char*>(&b.difficulty), 4);
+            f.read(reinterpret_cast<char*>(&b.num_variables), 4);
+            f.read(reinterpret_cast<char*>(&b.num_clauses), 4);
+            f.read(reinterpret_cast<char*>(b.witness_hash.data()), 32);
+            f.read(reinterpret_cast<char*>(&b.reward), 8);
+            f.read(reinterpret_cast<char*>(b.hash.data()), 32);
+
+            // Witness
+            uint32_t wsize;
+            f.read(reinterpret_cast<char*>(&wsize), 4);
+            b.witness.resize(wsize);
+            if (wsize > 0) {
+                uint32_t wbytes = (wsize + 7) / 8;
+                Bytes wbits(wbytes);
+                f.read(reinterpret_cast<char*>(wbits.data()), wbytes);
+                for (uint32_t j = 0; j < wsize; ++j)
+                    b.witness[j] = (wbits[j / 8] >> (j % 8)) & 1;
+            }
+
+            // Miner address
+            uint16_t alen;
+            f.read(reinterpret_cast<char*>(&alen), 2);
+            b.miner_address.resize(alen);
+            f.read(&b.miner_address[0], alen);
+
+            if (!f) return false;
+
+            // ─── FULL RE-VALIDATION on load ───
+            // Verify hash integrity
+            Hash256 computed_hash = b.compute_hash();
+            if (computed_hash != b.hash) {
+                std::cerr << "[LOAD] REJECTED block #" << b.height
+                          << " — hash mismatch (file may be corrupted)\n";
+                return false;
+            }
+
+            // Verify prev_hash chains correctly
+            if (b.height == 0) {
+                if (b.prev_hash != Hash256{}) {
+                    std::cerr << "[LOAD] REJECTED genesis — invalid prev_hash\n";
+                    return false;
+                }
+            } else {
+                if (blocks.empty() || b.prev_hash != blocks.back().hash) {
+                    std::cerr << "[LOAD] REJECTED block #" << b.height
+                              << " — prev_hash doesn't chain to previous block\n";
+                    return false;
+                }
+            }
+
+            // Verify height is sequential
+            if (b.height != blocks.size()) {
+                std::cerr << "[LOAD] REJECTED block #" << b.height
+                          << " — height gap (expected " << blocks.size() << ")\n";
+                return false;
+            }
+
+            // Verify witness against NP-instance
+            auto inst = generate_instance(b.prev_hash, b.difficulty);
+            if (!inst.verify(b.witness)) {
+                std::cerr << "[LOAD] REJECTED block #" << b.height
+                          << " — INVALID WITNESS (file tampered!)\n";
+                return false;
+            }
+
+            total_supply += b.reward;
+            balances[b.miner_address] += b.reward;
+            blocks.push_back(std::move(b));
+        }
+
+        f.close();
+        return true;
+    }
+
+    // ─── Export balances to JSON ───
+    bool export_balances(const std::string& path) const {
+        std::ofstream f(path);
+        if (!f) return false;
+
+        f << std::fixed << std::setprecision(4);
+        f << "{\n  \"height\": " << height()
+          << ",\n  \"total_supply\": " << (total_supply / 1000000.0)
+          << ",\n  \"timestamp\": \"" << std::chrono::system_clock::now().time_since_epoch().count() / 1000000000
+          << "\",\n  \"balances\": {\n";
+
+        bool first = true;
+        for (const auto& [addr, bal] : balances) {
+            if (!first) f << ",\n";
+            first = false;
+            f << "    \"" << addr << "\": " << (bal / 1000000.0);
+        }
+        f << "\n  }\n}\n";
+        f.close();
+        return true;
+    }
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -543,6 +716,183 @@ namespace sybil {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  Staking & Mainnet Migration System
+//
+//  Testnet miners earn Certs. At snapshot time, all balances are
+//  frozen and converted at 1000:1 ratio for mainnet genesis.
+//
+//  Flow:
+//  1. Mine on testnet → accumulate Certs
+//  2. Admin triggers snapshot at block height N
+//  3. Merkle root computed over all balances
+//  4. Miners complete KYC to bind testnet wallet to mainnet
+//  5. Mainnet genesis includes all verified balances at 1000:1
+// ═══════════════════════════════════════════════════════════════════
+
+namespace migration {
+    constexpr uint64_t CONVERSION_RATIO = 1000;  // 1000 testnet = 1 mainnet
+    constexpr uint64_t MIN_BALANCE_TO_MIGRATE = 47564688000ULL;  // ~47,564 Certs (1 block reward)
+}
+
+struct BalanceSnapshot {
+    std::string address;
+    uint64_t testnet_balance;     // In base units
+    uint64_t mainnet_balance;     // After 1000:1 conversion
+    uint64_t blocks_mined;
+    Hash256 proof;                // Merkle proof leaf hash
+    bool kyc_verified = false;
+    std::string kyc_token;
+};
+
+struct MigrationState {
+    bool snapshot_taken = false;
+    uint64_t snapshot_height = 0;
+    uint64_t snapshot_timestamp = 0;
+    Hash256 merkle_root{};
+    std::vector<BalanceSnapshot> snapshots;
+    uint64_t total_testnet_supply = 0;
+    uint64_t total_mainnet_allocation = 0;
+    uint32_t eligible_wallets = 0;
+    uint32_t kyc_verified_count = 0;
+
+    // Take a snapshot of all balances
+    void take_snapshot(const ChainState& chain) {
+        snapshots.clear();
+        snapshot_height = chain.height();
+        snapshot_timestamp = static_cast<uint64_t>(
+            std::chrono::system_clock::now().time_since_epoch().count() / 1'000'000'000);
+        total_testnet_supply = chain.total_supply;
+        total_mainnet_allocation = 0;
+        eligible_wallets = 0;
+
+        // Count blocks per miner
+        std::map<std::string, uint64_t> blocks_per_miner;
+        for (const auto& b : chain.blocks) {
+            blocks_per_miner[b.miner_address]++;
+        }
+
+        // Create snapshot for each address with sufficient balance
+        for (const auto& [addr, balance] : chain.balances) {
+            if (balance < migration::MIN_BALANCE_TO_MIGRATE) continue;
+
+            BalanceSnapshot snap;
+            snap.address = addr;
+            snap.testnet_balance = balance;
+            snap.mainnet_balance = balance / migration::CONVERSION_RATIO;
+            snap.blocks_mined = blocks_per_miner.count(addr) ? blocks_per_miner[addr] : 0;
+
+            // Compute leaf hash: SHA3(address || balance || blocks_mined)
+            Bytes leaf_data;
+            leaf_data.insert(leaf_data.end(), addr.begin(), addr.end());
+            uint8_t bal_bytes[8];
+            std::memcpy(bal_bytes, &balance, 8);
+            leaf_data.insert(leaf_data.end(), bal_bytes, bal_bytes + 8);
+            uint64_t bm = snap.blocks_mined;
+            uint8_t bm_bytes[8];
+            std::memcpy(bm_bytes, &bm, 8);
+            leaf_data.insert(leaf_data.end(), bm_bytes, bm_bytes + 8);
+            snap.proof = sha3_256(ByteSpan{leaf_data.data(), leaf_data.size()});
+
+            total_mainnet_allocation += snap.mainnet_balance;
+            eligible_wallets++;
+            snapshots.push_back(std::move(snap));
+        }
+
+        // Compute merkle root
+        if (!snapshots.empty()) {
+            std::vector<Hash256> leaves;
+            for (const auto& s : snapshots) leaves.push_back(s.proof);
+
+            // Simple merkle tree
+            while (leaves.size() > 1) {
+                std::vector<Hash256> next;
+                for (size_t i = 0; i < leaves.size(); i += 2) {
+                    Bytes combined(64);
+                    std::memcpy(combined.data(), leaves[i].data(), 32);
+                    if (i + 1 < leaves.size()) {
+                        std::memcpy(combined.data() + 32, leaves[i + 1].data(), 32);
+                    } else {
+                        std::memcpy(combined.data() + 32, leaves[i].data(), 32); // Duplicate last
+                    }
+                    next.push_back(sha3_256(ByteSpan{combined.data(), combined.size()}));
+                }
+                leaves = next;
+            }
+            merkle_root = leaves[0];
+        }
+
+        snapshot_taken = true;
+    }
+
+    // KYC verify a wallet
+    bool verify_kyc(const std::string& address, const std::string& token) {
+        for (auto& s : snapshots) {
+            if (s.address == address) {
+                s.kyc_verified = true;
+                s.kyc_token = token;
+                kyc_verified_count++;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Get snapshot for an address
+    BalanceSnapshot* get_snapshot(const std::string& address) {
+        for (auto& s : snapshots) {
+            if (s.address == address) return &s;
+        }
+        return nullptr;
+    }
+
+    // Generate mainnet genesis allocation JSON
+    std::string to_genesis_json() const {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(4);
+        ss << "{\"snapshot_height\":" << snapshot_height
+           << ",\"merkle_root\":\"" << to_hex(merkle_root) << "\""
+           << ",\"conversion_ratio\":" << migration::CONVERSION_RATIO
+           << ",\"eligible_wallets\":" << eligible_wallets
+           << ",\"kyc_verified\":" << kyc_verified_count
+           << ",\"total_testnet_supply\":" << (total_testnet_supply / 1000000.0)
+           << ",\"total_mainnet_allocation\":" << (total_mainnet_allocation / 1000000.0)
+           << ",\"allocations\":[";
+
+        bool first = true;
+        for (const auto& s : snapshots) {
+            if (!first) ss << ",";
+            first = false;
+            ss << "{\"address\":\"" << s.address << "\""
+               << ",\"testnet_balance\":" << (s.testnet_balance / 1000000.0)
+               << ",\"mainnet_balance\":" << (s.mainnet_balance / 1000000.0)
+               << ",\"blocks_mined\":" << s.blocks_mined
+               << ",\"kyc_verified\":" << (s.kyc_verified ? "true" : "false")
+               << ",\"proof\":\"" << to_hex(s.proof).substr(0, 16) << "...\""
+               << "}";
+        }
+        ss << "]}";
+        return ss.str();
+    }
+
+    // Single snapshot entry to JSON
+    std::string snapshot_to_json(const BalanceSnapshot& s) const {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(4);
+        ss << "{\"address\":\"" << s.address << "\""
+           << ",\"testnet_balance\":" << (s.testnet_balance / 1000000.0)
+           << ",\"mainnet_balance\":" << (s.mainnet_balance / 1000000.0)
+           << ",\"blocks_mined\":" << s.blocks_mined
+           << ",\"kyc_verified\":" << (s.kyc_verified ? "true" : "false")
+           << ",\"proof\":\"" << to_hex(s.proof) << "\""
+           << ",\"conversion_ratio\":" << migration::CONVERSION_RATIO
+           << ",\"snapshot_height\":" << snapshot_height
+           << ",\"merkle_root\":\"" << to_hex(merkle_root).substr(0, 32) << "...\""
+           << "}";
+        return ss.str();
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════
 //  Mining Loop
 // ═══════════════════════════════════════════════════════════════════
 
@@ -604,6 +954,8 @@ static std::mutex g_chain_mutex;
 static P2PManager* g_p2p = nullptr;
 static std::string* g_miner_addr = nullptr;
 static GovernanceState* g_gov = nullptr;
+static MigrationState* g_migration = nullptr;
+static std::string g_admin_password = "";  // Required for migration endpoints
 
 std::string make_json_response(const std::string& json) {
     return "HTTP/1.1 200 OK\r\n"
@@ -885,6 +1237,120 @@ void handle_rpc_client(SOCKET client) {
            << "}";
         response = make_json_response(ss.str());
     }
+    // ─── Migration / Staking Endpoints ───
+    else if (path == "/api/v1/migration/status") {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(4);
+        ss << "{\"snapshot_taken\":" << (g_migration->snapshot_taken ? "true" : "false")
+           << ",\"snapshot_height\":" << g_migration->snapshot_height
+           << ",\"conversion_ratio\":" << migration::CONVERSION_RATIO
+           << ",\"min_balance_to_migrate\":" << (migration::MIN_BALANCE_TO_MIGRATE / 1000000.0)
+           << ",\"eligible_wallets\":" << g_migration->eligible_wallets
+           << ",\"kyc_verified\":" << g_migration->kyc_verified_count
+           << ",\"total_testnet_supply\":" << (g_chain->total_supply / 1000000.0)
+           << ",\"total_mainnet_allocation\":" << (g_migration->total_mainnet_allocation / 1000000.0)
+           << ",\"merkle_root\":\"" << (g_migration->snapshot_taken ? to_hex(g_migration->merkle_root).substr(0, 32) + "..." : "") << "\""
+           << ",\"chain_height\":" << g_chain->height()
+           << ",\"total_miners\":" << g_chain->balances.size()
+           << "}";
+        response = make_json_response(ss.str());
+    }
+    else if (path == "/api/v1/migration/snapshot" && is_post) {
+        // Take a snapshot (ADMIN ONLY — requires admin password)
+        auto getField = [&](const std::string& key) -> std::string {
+            std::string search = "\"" + key + "\":\"";
+            auto pos = body.find(search);
+            if (pos == std::string::npos) return "";
+            pos += search.size();
+            auto end = body.find("\"", pos);
+            if (end == std::string::npos) return "";
+            return body.substr(pos, end - pos);
+        };
+        std::string pw = getField("admin_password");
+
+        if (g_admin_password.empty()) {
+            response = make_json_response("{\"ok\":false,\"error\":\"Admin password not set. Start node with --admin-password YOUR_PASSWORD\"}");
+        } else if (pw != g_admin_password) {
+            response = make_json_response("{\"ok\":false,\"error\":\"Invalid admin password\"}");
+        } else if (g_migration->snapshot_taken) {
+            response = make_json_response("{\"ok\":false,\"error\":\"Snapshot already taken at height "
+                + std::to_string(g_migration->snapshot_height) + "\"}");
+        } else {
+            g_migration->take_snapshot(*g_chain);
+            std::cout << "[MIGRATION] Snapshot taken at height " << g_migration->snapshot_height
+                      << " | " << g_migration->eligible_wallets << " eligible wallets"
+                      << " | Mainnet allocation: " << std::fixed << std::setprecision(2)
+                      << (g_migration->total_mainnet_allocation / 1000000.0) << " Certs\n";
+            response = make_json_response(g_migration->to_genesis_json());
+        }
+    }
+    else if (path.substr(0, 25) == "/api/v1/migration/check/c") {
+        // Check migration status for a specific address
+        std::string addr = path.substr(23);
+        if (!g_migration->snapshot_taken) {
+            // No snapshot yet — show live preview
+            uint64_t bal = g_chain->get_balance(addr);
+            uint64_t mainnet_bal = bal / migration::CONVERSION_RATIO;
+            uint64_t blocks = 0;
+            for (const auto& b : g_chain->blocks)
+                if (b.miner_address == addr) blocks++;
+
+            std::ostringstream ss;
+            ss << std::fixed << std::setprecision(4);
+            ss << "{\"address\":\"" << addr << "\""
+               << ",\"snapshot_taken\":false"
+               << ",\"testnet_balance\":" << (bal / 1000000.0)
+               << ",\"estimated_mainnet_balance\":" << (mainnet_bal / 1000000.0)
+               << ",\"blocks_mined\":" << blocks
+               << ",\"eligible\":" << (bal >= migration::MIN_BALANCE_TO_MIGRATE ? "true" : "false")
+               << ",\"conversion_ratio\":" << migration::CONVERSION_RATIO
+               << ",\"min_balance\":" << (migration::MIN_BALANCE_TO_MIGRATE / 1000000.0)
+               << "}";
+            response = make_json_response(ss.str());
+        } else {
+            auto* snap = g_migration->get_snapshot(addr);
+            if (snap) {
+                response = make_json_response(g_migration->snapshot_to_json(*snap));
+            } else {
+                response = make_json_response("{\"address\":\"" + addr + "\",\"eligible\":false,\"error\":\"Address not in snapshot\"}");
+            }
+        }
+    }
+    else if (path == "/api/v1/migration/kyc" && is_post) {
+        // KYC verify a wallet (ADMIN ONLY)
+        auto getField = [&](const std::string& key) -> std::string {
+            std::string search = "\"" + key + "\":\"";
+            auto pos = body.find(search);
+            if (pos == std::string::npos) return "";
+            pos += search.size();
+            auto end = body.find("\"", pos);
+            if (end == std::string::npos) return "";
+            return body.substr(pos, end - pos);
+        };
+
+        std::string pw = getField("admin_password");
+        std::string addr = getField("address");
+        std::string token = getField("kyc_token");
+
+        if (g_admin_password.empty() || pw != g_admin_password) {
+            response = make_json_response("{\"ok\":false,\"error\":\"Invalid admin password\"}");
+        } else if (!g_migration->snapshot_taken) {
+            response = make_json_response("{\"ok\":false,\"error\":\"No snapshot taken yet\"}");
+        } else if (g_migration->verify_kyc(addr, token)) {
+            std::cout << "[MIGRATION] KYC verified: " << addr.substr(0, 20) << "...\n";
+            response = make_json_response("{\"ok\":true,\"address\":\"" + addr + "\",\"kyc_verified\":true}");
+        } else {
+            response = make_json_response("{\"ok\":false,\"error\":\"Address not found in snapshot\"}");
+        }
+    }
+    else if (path == "/api/v1/migration/genesis") {
+        // Export full genesis allocation
+        if (!g_migration->snapshot_taken) {
+            response = make_json_response("{\"error\":\"No snapshot taken yet\"}");
+        } else {
+            response = make_json_response(g_migration->to_genesis_json());
+        }
+    }
     else {
         response = make_404();
     }
@@ -965,6 +1431,7 @@ int main(int argc, char** argv) {
     bool fast_mode = false;
     uint32_t target_block_time = 15;
     std::vector<std::string> seed_nodes;
+    std::string data_dir = ".";
 
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
@@ -976,6 +1443,8 @@ int main(int argc, char** argv) {
         if (arg == "--seed" && i + 1 < argc) seed_nodes.push_back(argv[++i]);
         if (arg == "--fast") fast_mode = true;
         if (arg == "--block-time" && i + 1 < argc) target_block_time = std::stoul(argv[++i]);
+        if (arg == "--admin-password" && i + 1 < argc) g_admin_password = argv[++i];
+        if (arg == "--data-dir" && i + 1 < argc) data_dir = argv[++i];
         if (arg == "--help") {
             std::cout << "Usage: npchain_testnet [options]\n\n"
                       << "  --address <cert1...>   Mine to your wallet address\n"
@@ -1037,9 +1506,16 @@ int main(int argc, char** argv) {
 
     // Initialize chain
     ChainState chain;
+    std::string chain_file = data_dir + "/npchain_blocks.dat";
+    std::string balance_file = data_dir + "/npchain_balances.json";
     bool have_seeds = !seed_nodes.empty();
 
-    if (!have_seeds) {
+    // Try loading chain from disk
+    if (chain.load_from_disk(chain_file)) {
+        std::cout << "[INIT] Loaded chain from disk: " << chain.height() << " blocks, "
+                  << std::fixed << std::setprecision(4) << (chain.total_supply / 1000000.0) << " Certs\n";
+        std::cout << "[INIT] Tip: " << to_hex(chain.tip_hash()).substr(0, 32) << "...\n";
+    } else if (!have_seeds) {
         // Create genesis block (first node / seed node)
         std::cout << "[INIT] Creating genesis block...\n";
         Block genesis;
@@ -1088,6 +1564,8 @@ int main(int argc, char** argv) {
     g_miner_addr = &miner_addr;
     GovernanceState governance;
     g_gov = &governance;
+    MigrationState migration_state;
+    g_migration = &migration_state;
     std::thread rpc_thread(rpc_server_thread, rpc_port);
     rpc_thread.detach();
 
@@ -1266,6 +1744,14 @@ int main(int argc, char** argv) {
         // Process governance votes/activations
         governance.process_height(chain.height(), chain.total_supply);
 
+        // ─── Persistence: save chain to disk after each block ───
+        chain.save_to_disk(chain_file);
+
+        // ─── Periodic balance export every 10 blocks ───
+        if (chain.height() % 10 == 0) {
+            chain.export_balances(balance_file);
+        }
+
         ++blocks_mined;
         total_solve_ms += mine_elapsed;
 
@@ -1318,6 +1804,19 @@ int main(int argc, char** argv) {
     p2p.stop();
     g_p2p = nullptr;
     g_gov = nullptr;
+    g_migration = nullptr;
+
+    // Save chain and balances to disk before exiting
+    std::cout << "\n[SAVE] Saving chain to disk...\n";
+    if (chain.save_to_disk(chain_file)) {
+        std::cout << "[SAVE] Chain saved: " << chain.height() << " blocks → " << chain_file << "\n";
+    } else {
+        std::cerr << "[SAVE] WARNING: Failed to save chain!\n";
+    }
+    if (chain.export_balances(balance_file)) {
+        std::cout << "[SAVE] Balances exported → " << balance_file << "\n";
+    }
+
     std::cout << "\n═══════════════════════════════════════════════════════\n";
     std::cout << "  TESTNET STOPPED\n";
     std::cout << "═══════════════════════════════════════════════════════\n\n";
