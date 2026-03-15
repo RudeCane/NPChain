@@ -533,8 +533,8 @@ struct Proposal {
 namespace gov {
     constexpr uint64_t VOTE_PERIOD_BLOCKS    = 240;     // ~1 hour on testnet (240 * 15s)
     constexpr uint64_t ACTIVATION_DELAY      = 120;     // ~30 min after vote passes
-    constexpr double   APPROVAL_THRESHOLD    = 0.75;    // 75% of voting power
-    constexpr double   PARTICIPATION_MIN     = 0.10;    // 10% minimum participation (testnet)
+    constexpr double   APPROVAL_THRESHOLD    = 0.75;    // 75% of voting power to approve
+    constexpr double   PARTICIPATION_MIN     = 0.70;    // 70% of all miners must vote
     constexpr uint64_t MIN_PROPOSER_BALANCE  = 47564688000ULL; // ~47,564 Certs (1 block reward)
     constexpr uint64_t EMERGENCY_VOTE_PERIOD = 40;      // ~10 min for emergencies
     constexpr double   EMERGENCY_THRESHOLD   = 0.90;    // 90% for emergency
