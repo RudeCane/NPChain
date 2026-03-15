@@ -257,7 +257,40 @@ function doCreate(){err='';if(pw1.length<8){err='Password must be 8+ characters'
 function doUnlock(){err='';var r=decryptKey(W.encrypted,pwu);if(!r){err='Wrong password';render();setTimeout(function(){err='';render()},3000);return}unlocked=true;pwu='';err='';startPoll();render()}
 function doDelete(){if(!confirm('DELETE WALLET?\n\nYou will need a new address to mine.'))return;LS.del('wallet');W=null;unlocked=false;justCreated=false;stopPoll();on=false;bal='0.0000';ht=0;mined=0;blocks=[];props=[];jobs=[];tab='wallet';err='';render()}
 
-W=LS.load('wallet');if(W){unlocked=false;justCreated=false}
+// Auto-migrate from any old wallet storage key
+function migrateWallet(){
+  var keys=['npc3_wallet','npc_wallet','npc2_wallet','npc4_wallet','npchain_wallet','npc3_w2'];
+  for(var i=0;i<keys.length;i++){
+    try{var v=localStorage.getItem(keys[i]);if(v){var w=JSON.parse(v);if(w&&w.address&&w.encrypted){LS.save('wallet',w);return w}}}catch(e){}
+  }
+  return null;
+}
+
+// Warn if opened from file://
+var isFile=window.location.protocol==='file:';
+
+W=LS.load('wallet');
+if(!W)W=migrateWallet();
+if(W){unlocked=false;justCreated=false}
+
+// Inject file:// warning into render if needed
+var origRender=render;
+render=function(){
+  origRender();
+  if(isFile&&!W){
+    var main=document.querySelector('.main');
+    if(main){
+      var warn=h('div',{style:{margin:'0 16px',padding:'14px',background:'#2a0a00',border:'1px solid #ef444433',borderRadius:'10px',fontSize:'11px',color:'var(--red)',lineHeight:'1.8'}},
+        h('div',{style:{fontWeight:'700',marginBottom:'6px',fontSize:'12px'}},'Warning: Opened from file://'),
+        'Your wallet won\'t connect to the mining node from here.',h('br'),
+        'Run this in MSYS2 or PowerShell:',h('br'),
+        h('span',{style:{color:'var(--accent)'}},'python3 -m http.server 8888'),h('br'),
+        'Then open: ',h('span',{style:{color:'var(--accent)'}},'http://localhost:8888')
+      );
+      main.insertBefore(warn,main.children[1]||null);
+    }
+  }
+};
 render();
 </script>
 </body>
