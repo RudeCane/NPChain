@@ -957,6 +957,89 @@ static GovernanceState* g_gov = nullptr;
 static MigrationState* g_migration = nullptr;
 static std::string g_admin_password = "";  // Required for migration endpoints
 
+// ═══════════════════════════════════════════════════════════════════
+//  Basic Node Protections (built-in, no Docker needed)
+// ═══════════════════════════════════════════════════════════════════
+
+struct RateLimiter {
+    struct IPRecord {
+        uint32_t request_count = 0;
+        std::chrono::steady_clock::time_point window_start;
+        uint32_t blocked_until = 0;  // seconds since epoch
+    };
+
+    std::map<std::string, IPRecord> records;
+    std::mutex mutex;
+
+    static constexpr uint32_t MAX_REQUESTS_PER_MINUTE = 120;  // 2 per second avg
+    static constexpr uint32_t BAN_DURATION_SECONDS = 60;      // 1 min ban on abuse
+    static constexpr uint32_t MAX_TRACKED_IPS = 10000;        // Memory cap
+
+    // Returns true if request is allowed, false if rate limited
+    bool allow(const std::string& ip) {
+        std::lock_guard<std::mutex> lock(mutex);
+        auto now = std::chrono::steady_clock::now();
+
+        auto& rec = records[ip];
+
+        // Check if banned
+        if (rec.blocked_until > 0) {
+            auto epoch_now = static_cast<uint32_t>(
+                std::chrono::system_clock::now().time_since_epoch().count() / 1000000000);
+            if (epoch_now < rec.blocked_until) return false;
+            rec.blocked_until = 0;
+            rec.request_count = 0;
+        }
+
+        // Reset window if >60 seconds passed
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - rec.window_start).count();
+        if (elapsed >= 60) {
+            rec.request_count = 0;
+            rec.window_start = now;
+        }
+
+        rec.request_count++;
+
+        if (rec.request_count > MAX_REQUESTS_PER_MINUTE) {
+            // Ban this IP
+            rec.blocked_until = static_cast<uint32_t>(
+                std::chrono::system_clock::now().time_since_epoch().count() / 1000000000)
+                + BAN_DURATION_SECONDS;
+            std::cout << "[SHIELD] Rate limited IP: " << ip << " (" << rec.request_count
+                      << " req/min, banned " << BAN_DURATION_SECONDS << "s)\n";
+            return false;
+        }
+
+        // Cleanup old entries if too many tracked
+        if (records.size() > MAX_TRACKED_IPS) {
+            auto it = records.begin();
+            while (it != records.end() && records.size() > MAX_TRACKED_IPS / 2) {
+                auto age = std::chrono::duration_cast<std::chrono::seconds>(now - it->second.window_start).count();
+                if (age > 300) {  // Remove entries older than 5 min
+                    it = records.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+
+        return true;
+    }
+};
+
+static RateLimiter g_rate_limiter;
+
+std::string make_429() {
+    std::string body = "{\"error\":\"rate limited\",\"retry_after\":60}";
+    return "HTTP/1.1 429 Too Many Requests\r\n"
+           "Content-Type: application/json\r\n"
+           "Access-Control-Allow-Origin: *\r\n"
+           "Retry-After: 60\r\n"
+           "Connection: close\r\n"
+           "Content-Length: " + std::to_string(body.size()) + "\r\n"
+           "\r\n" + body;
+}
+
 std::string make_json_response(const std::string& json) {
     return "HTTP/1.1 200 OK\r\n"
            "Content-Type: application/json\r\n"
@@ -980,8 +1063,15 @@ std::string make_404() {
 
 void handle_rpc_client(SOCKET client) {
     char buf[8192] = {};
-    recv(client, buf, sizeof(buf) - 1, 0);
-    std::string req(buf);
+    int received = recv(client, buf, sizeof(buf) - 1, 0);
+
+    // Protection: reject empty or oversized requests
+    if (received <= 0 || received >= 8191) {
+        CLOSESOCK(client);
+        return;
+    }
+
+    std::string req(buf, received);
 
     // Parse method and path
     std::string path, body;
@@ -1404,6 +1494,21 @@ void rpc_server_thread(uint16_t port) {
 
         SOCKET client = accept(server, reinterpret_cast<struct sockaddr*>(&client_addr), &client_len);
         if (client == INVALID_SOCKET) continue;
+
+        // Extract client IP for rate limiting
+        char client_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
+        std::string ip_str(client_ip);
+
+        // Rate limit check (skip localhost)
+        if (ip_str != "127.0.0.1" && ip_str != "0.0.0.0") {
+            if (!g_rate_limiter.allow(ip_str)) {
+                std::string resp = make_429();
+                send(client, resp.c_str(), static_cast<int>(resp.size()), 0);
+                CLOSESOCK(client);
+                continue;
+            }
+        }
 
         handle_rpc_client(client);
     }
