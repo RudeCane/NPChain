@@ -684,7 +684,7 @@ struct GovernanceState {
 
 namespace sybil {
     // 1. Max consecutive blocks by same miner
-    constexpr uint32_t MAX_CONSECUTIVE_BLOCKS = 5;
+    constexpr uint32_t MAX_CONSECUTIVE_BLOCKS = 50;  // Higher for small testnet, lower on mainnet
 
     // 2. Minimum stake to mine (must have mined at least 1 block or hold Certs)
     //    Set to 0 for testnet to allow new miners to join
