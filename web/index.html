@@ -135,7 +135,7 @@ function encryptKey(sk,pw){var salt=crypto.getRandomValues(new Uint8Array(16));v
 function decryptKey(data,pw){var salt=new Uint8Array(data.salt.match(/.{2}/g).map(function(b){return parseInt(b,16)}));var key=deriveKey(pw,salt);if(toHex(sha3(key))!==data.check)return null;return true}
 
 // ═══ State ═══
-var LS={save:function(k,v){try{localStorage.setItem('npc4_'+k,JSON.stringify(v))}catch(e){}},load:function(k){try{var v=localStorage.getItem('npc4_'+k);return v?JSON.parse(v):null}catch(e){return null}},del:function(k){try{localStorage.removeItem('npc4_'+k)}catch(e){}}};
+var LS={save:function(k,v){try{localStorage.setItem('npc3_'+k,JSON.stringify(v))}catch(e){}},load:function(k){try{var v=localStorage.getItem('npc3_'+k);return v?JSON.parse(v):null}catch(e){return null}},del:function(k){try{localStorage.removeItem('npc3_'+k)}catch(e){}}};
 var RPC='http://localhost:18333';
 var W=null,unlocked=false,pw1='',pw2='',pwu='',err='',suc='',justCreated=false;
 var copied=false,cmdCopied=false;
