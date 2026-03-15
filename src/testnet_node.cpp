@@ -952,6 +952,14 @@ struct MarketplaceJob {
         }
         return best;
     }
+    const MarketplaceSolution* best_solution() const {
+        if (solutions.empty()) return nullptr;
+        const MarketplaceSolution* best = &solutions[0];
+        for (const auto& s : solutions) {
+            if (s.quality_score < best->quality_score) best = &s;
+        }
+        return best;
+    }
 };
 
 struct MarketplaceState {
